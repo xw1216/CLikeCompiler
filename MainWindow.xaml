@@ -1,0 +1,24 @@
+﻿<Window
+    x:Class="CLikeCompiler.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:CLikeCompiler"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <NavigationView x:Name="SideNav" IsBackButtonVisible="Collapsed" IsSettingsVisible="False"
+                    SelectionChanged="SideNav_SelectionChanged">
+        <NavigationView.MenuItems>
+            <NavigationViewItem Icon="OpenWith" Content="源码输入" Tag="SrcInputPage" />
+            <NavigationViewItem Icon="Refresh" Content="Menu Item3" Tag="SamplePage3" />
+            <NavigationViewItem Icon="Download" Content="Menu Item4" Tag="SamplePage4" />
+        </NavigationView.MenuItems>
+        <NavigationView.FooterMenuItems>
+            <NavigationViewItem Icon="OpenFile" Content="运行日志" Tag="LogPage"/>
+            <NavigationViewItem Icon="Help" Content="帮助" Tag="HelpPage"/>
+        </NavigationView.FooterMenuItems>
+        <Frame x:Name="contentFrame"/>
+    </NavigationView>
+
+</Window>

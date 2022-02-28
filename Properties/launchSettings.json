@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "CLikeCompiler (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "CLikeCompiler (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
