@@ -12,6 +12,13 @@
     <EnablePreviewMsixTooling>true</EnablePreviewMsixTooling>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="MidCodePage.xaml" />
+    <None Remove="Pages\HelpPage.xaml" />
+    <None Remove="Pages\LogPage.xaml" />
+    <None Remove="Pages\MidCodePage.xaml" />
+    <None Remove="Pages\SrcInputPage.xaml" />
+    <None Remove="Pages\TargetCodePage.xaml" />
+    <None Remove="Pages\WelcomePage.xaml" />
     <None Remove="SrcInputPage.xaml" />
   </ItemGroup>
 
@@ -38,7 +45,32 @@
     <ProjectCapability Include="Msix" />
   </ItemGroup>
   <ItemGroup>
-    <Page Update="SrcInputPage.xaml">
+    <Page Update="Pages\WelcomePage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Pages\HelpPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Pages\LogPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Pages\TargetCodePage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Pages\MidCodePage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Pages\SrcInputPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>

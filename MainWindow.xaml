@@ -10,15 +10,23 @@
     <NavigationView x:Name="SideNav" IsBackButtonVisible="Collapsed" IsSettingsVisible="False"
                     SelectionChanged="SideNav_SelectionChanged">
         <NavigationView.MenuItems>
-            <NavigationViewItem Icon="OpenWith" Content="源码输入" Tag="SrcInputPage" />
-            <NavigationViewItem Icon="Refresh" Content="Menu Item3" Tag="SamplePage3" />
-            <NavigationViewItem Icon="Download" Content="Menu Item4" Tag="SamplePage4" />
+            <NavigationViewItem Icon="Page2" Content="源码输入" Tag="SrcInputPage" />
+            <NavigationViewItem Icon="Share" Content="中间代码" Tag="MidCodePage" />
+            <NavigationViewItem Icon="ReShare" Content="目标代码" Tag="TargetCodePage" />
         </NavigationView.MenuItems>
         <NavigationView.FooterMenuItems>
             <NavigationViewItem Icon="OpenFile" Content="运行日志" Tag="LogPage"/>
+            <NavigationViewItem Icon="Contact2" Content="欢迎页面" Tag="WelcomePage"/>
             <NavigationViewItem Icon="Help" Content="帮助" Tag="HelpPage"/>
         </NavigationView.FooterMenuItems>
-        <Frame x:Name="contentFrame"/>
+        
+        <Frame x:Name="contentFrame">
+            <Frame.ContentTransitions>
+                <TransitionCollection>
+                    <NavigationThemeTransition  />
+                </TransitionCollection>
+            </Frame.ContentTransitions>
+        </Frame>
     </NavigationView>
 
 </Window>

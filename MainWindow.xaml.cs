@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.Collections.Generic;
@@ -26,6 +27,12 @@ namespace CLikeCompiler
         public MainWindow()
         {
             this.InitializeComponent();
+            setWindowTitle();
+        }
+
+        private void setWindowTitle()
+        {
+            Title = "类 C 编译器";
         }
 
         private void myButton_Click(object sender, RoutedEventArgs e)
@@ -39,9 +46,9 @@ namespace CLikeCompiler
             if (selectedItem != null)
             {
                 string selectedItemTag = ((string)selectedItem.Tag);
-                string pageName = "CLikeCompiler." + selectedItemTag;
+                string pageName = "CLikeCompiler.Pages." + selectedItemTag;
                 Type pageType = Type.GetType(pageName);
-                contentFrame.Navigate(pageType);
+                contentFrame.Navigate(pageType, null, new EntranceNavigationTransitionInfo());
             }
         }
     }
