@@ -29,12 +29,27 @@ namespace CLikeCompiler.Pages
         public LogPage()
         {
             this.InitializeComponent();
+            AddLogItem();
         }
 
         private void AddLogItem()
         {
-
+            LogUtility logger =  MainWindow.mainPage.GetLogger();
+            logger.NewLogRecord("Test1", LogItem.MsgType.INFO);
+            logger.NewLogRecord("Test2", LogItem.MsgType.INFO);
+            logger.NewLogRecord("Test3", LogItem.MsgType.INFO);
         }
 
+        private void MoreLogClick(object sender, RoutedEventArgs e)
+        {
+            LogUtility.logger.OpenLogInNotepad();
+            MainWindow.mainPage.ShowErrorPage("若要继续，请先关闭日志文件。", "提示");
+            
+        }
+
+        private void ClearLogClick(object sender, RoutedEventArgs e)
+        {
+            LogUtility.logger.ClearDisplayRecord();
+        }
     }
 }

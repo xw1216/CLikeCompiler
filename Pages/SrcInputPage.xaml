@@ -80,9 +80,10 @@
         </SplitView>
 
         <InfoBar Grid.Row="2" x:Name="infoBar" IsOpen="True" IsIconVisible="True" Severity="Informational" 
-                 Title="检查结果" Message="Test">
+                 Title="检查结果" Message="">
             <InfoBar.ActionButton >
-                <Button Content="跳转" Visibility="Visible" HorizontalAlignment="Right"></Button>
+                <Button x:Name="CheckPassBtn" Content="跳转" Visibility="Visible" 
+                        HorizontalAlignment="Right" Click="CheckPassJumpBtnClick"></Button>
             </InfoBar.ActionButton>
         </InfoBar>
 

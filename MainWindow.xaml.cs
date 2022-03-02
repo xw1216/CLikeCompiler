@@ -15,6 +15,9 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 
+using CLikeCompiler.Libs;
+using CLikeCompiler.Pages;
+
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
@@ -26,13 +29,22 @@ namespace CLikeCompiler
     public sealed partial class MainWindow : Window
     {
         public static MainWindow mainPage;
+        private LogUtility logger;
 
         public MainWindow()
         {
             this.InitializeComponent();
             SetWindowTitleBar();
+            RegisterAllComponents();
             ShowWelcomePage();
+
+        }
+
+        private void RegisterAllComponents()
+        {
             mainPage = this;
+            logger = new LogUtility();
+            LogUtility.logger = logger;
         }
 
         private void SetWindowTitleBar()
@@ -42,6 +54,11 @@ namespace CLikeCompiler
             Microsoft.UI.WindowId windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hWnd);
             AppWindow appWindow = AppWindow.GetFromWindowId(windowId);
             appWindow.SetIcon("Assets/favicon.ico");
+        }
+
+        public ref LogUtility GetLogger()
+        {
+            return ref logger;
         }
 
         private void SideNav_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
@@ -65,9 +82,9 @@ namespace CLikeCompiler
             }
         }
 
-        public void PageTagNavigation(string pageTag, bool isChanged = false)
+        public void PageTagNavigation(string pageTag, bool userAct = false)
         {
-            if(!isChanged)
+            if(!userAct)
             {
                 foreach (NavigationViewItem item in SideNav.MenuItems)
                 {
@@ -90,18 +107,20 @@ namespace CLikeCompiler
             }
         }
 
-        public async void ShowErrorPage(string message)
+        public async void ShowErrorPage(string message, string title = "内部错误")
         {
             CLikeCompiler.Pages.ErrorDialog dialogPage = new();
             dialogPage.SetErrorMsg(message);
 
             ContentDialog dialog = new()
             {
-                Title = "内部错误",
+                Title = title,
                 PrimaryButtonText = "确定",
                 DefaultButton = ContentDialogButton.Primary,
                 Content = dialogPage,
             };
+
+            dialog.XamlRoot = SideNav.XamlRoot;
             await dialog.ShowAsync();
         }
     }

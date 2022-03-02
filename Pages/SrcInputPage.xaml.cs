@@ -57,8 +57,13 @@ namespace CLikeCompiler.Pages
             {
                 MainWindow.mainPage.ShowErrorPage("无法打开代码文件");
             }
-
         }
+
+        private void CheckPassJumpBtnClick(object sender, RoutedEventArgs e)
+        {
+            infoBar.Visibility = Visibility.Collapsed;
+            MainWindow.mainPage.PageTagNavigation("MidCodePage");
+        } 
     }
 
     

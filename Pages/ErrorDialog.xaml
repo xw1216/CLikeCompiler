@@ -6,10 +6,10 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    Background="Transparent">
 
-        <StackPanel VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
-            <TextBlock x:Name="errorMsg" Text="" TextWrapping="Wrap" />
+        <StackPanel VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Background="Transparent">
+            <TextBlock x:Name="errorMsg" Text="1" TextWrapping="Wrap" FontSize="16" />
         </StackPanel>
 
 </Page>
