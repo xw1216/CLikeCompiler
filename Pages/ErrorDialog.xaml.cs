@@ -5,7 +5,6 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
-using Microsoft.UI.Xaml.Documents;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,8 +12,6 @@ using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
-
-using CLikeCompiler.Libs;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -24,17 +21,16 @@ namespace CLikeCompiler.Pages
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public sealed partial class LogPage : Page
+    public sealed partial class ErrorDialog : Page
     {
-        public LogPage()
+        public ErrorDialog()
         {
             this.InitializeComponent();
         }
 
-        private void AddLogItem()
+        public void SetErrorMsg(string errMsg)
         {
-
+            errorMsg.Text = errMsg;
         }
-
     }
 }

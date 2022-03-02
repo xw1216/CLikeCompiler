@@ -27,5 +27,10 @@ namespace CLikeCompiler.Pages
         {
             this.InitializeComponent();
         }
+
+        private void StartButton_Click(object sender, RoutedEventArgs e)
+        {
+            MainWindow.mainPage.PageTagNavigation("SrcInputPage");
+        }
     }
 }

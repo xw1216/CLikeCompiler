@@ -27,5 +27,39 @@ namespace CLikeCompiler.Pages
         {
             this.InitializeComponent();
         }
+
+        private void CloseCheckPane(object sender, RoutedEventArgs e)
+        {
+            splitView.IsPaneOpen = false;
+        }
+
+        private void ToggleCheckPane(object sender, RoutedEventArgs e)
+        {
+            splitView.IsPaneOpen = !splitView.IsPaneOpen;
+        }
+
+        private async void OpenCodeFile(object sender, RoutedEventArgs e)
+        {
+            Windows.Storage.Pickers.FileOpenPicker picker = new();
+            picker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.Desktop;
+            picker.FileTypeFilter.Add("*");
+            picker.FileTypeFilter.Add(".txt");
+
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(MainWindow.mainPage);
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+            
+            Windows.Storage.StorageFile file = await picker.PickSingleFileAsync();
+
+            if (file != null)
+            {
+                codeBox.Text = await Windows.Storage.FileIO.ReadTextAsync(file);
+            } else
+            {
+                MainWindow.mainPage.ShowErrorPage("无法打开代码文件");
+            }
+
+        }
     }
+
+    
 }

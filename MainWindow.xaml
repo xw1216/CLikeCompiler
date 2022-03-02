@@ -15,8 +15,8 @@
             <NavigationViewItem Icon="ReShare" Content="目标代码" Tag="TargetCodePage" />
         </NavigationView.MenuItems>
         <NavigationView.FooterMenuItems>
-            <NavigationViewItem Icon="OpenFile" Content="运行日志" Tag="LogPage"/>
-            <NavigationViewItem Icon="Contact2" Content="欢迎页面" Tag="WelcomePage"/>
+            <NavigationViewItem Icon="OpenFile" Content="运行日志" Tag="LogPage" />
+            <NavigationViewItem Icon="Contact2" Content="欢迎页面" Tag="WelcomePage" x:Name="welcomViewItem"/>
             <NavigationViewItem Icon="Help" Content="帮助" Tag="HelpPage"/>
         </NavigationView.FooterMenuItems>
         

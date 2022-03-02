@@ -11,12 +11,13 @@
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="auto" />
-            <RowDefinition />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         
         <CommandBar Grid.Row="0" Background="Transparent" IsOpen="False" DefaultLabelPosition="Right">
-            <AppBarButton Icon="Add" Label="打开文件" >
+            <AppBarButton Icon="Add" Label="打开文件" Click="OpenCodeFile">
                 <AppBarButton.KeyboardAccelerators>
                     <KeyboardAccelerator Modifiers="Control" Key="O" />
                 </AppBarButton.KeyboardAccelerators>
@@ -33,18 +34,57 @@
                         <KeyboardAccelerator Modifiers="Control" Key="D" />
                     </AppBarButton.KeyboardAccelerators>
                 </AppBarButton>
+                <AppBarButton Icon="OpenPane" Label="检查面板" Click="ToggleCheckPane">
+                    <AppBarButton.KeyboardAccelerators>
+                        <KeyboardAccelerator Modifiers="Control" Key="Right" />
+                    </AppBarButton.KeyboardAccelerators>
+                </AppBarButton>
             </CommandBar.SecondaryCommands>
 
             <CommandBar.Content>
-                <TextBlock Text="从源代码开始..." FontSize="18" Margin="36,14" />
+                <TextBlock Text="从源代码开始" FontSize="20" Margin="20,14" VerticalAlignment="Top" />
             </CommandBar.Content>
         </CommandBar>
 
-        <TextBox Grid.Row="1" AutomationProperties.Name="multi-line TextBox" 
+        <SplitView Grid.Row="1" x:Name="splitView" DisplayMode="Inline" IsPaneOpen="True" PanePlacement="Right">
+            <Grid>
+                <TextBox x:Name="codeBox" AutomationProperties.Name="multi-line TextBox" 
                  TextWrapping="Wrap" AcceptsReturn="True" Height="Auto" FontSize="16" FontFamily="Consolas"
-                 ScrollViewer.VerticalScrollBarVisibility="Auto" PlaceholderText="在这里输入符合语法规则的类C代码">
+                 ScrollViewer.VerticalScrollBarVisibility="Auto" PlaceholderText="// Type in or open file.">
+                </TextBox>
+            </Grid>
             
-        </TextBox>
-        
+            <SplitView.Pane>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <TextBlock x:Name="paneHeader" Text="检查信息" TextAlignment="Center" 
+                                        FontSize="18" Margin="0,14" />
+                    <ListView x:Name="CheckMsgLink" SelectionMode="Single"  Grid.Row="1">
+                        
+                    </ListView>
+
+                    <CommandBar Grid.Row="2" Background="Transparent" IsOpen="False" DefaultLabelPosition="Right">
+                        <AppBarButton Icon="Forward" Label="关闭检查面板" Click="CloseCheckPane">
+                        </AppBarButton>
+                    </CommandBar>
+
+
+                </Grid>
+            </SplitView.Pane>
+
+        </SplitView>
+
+        <InfoBar Grid.Row="2" x:Name="infoBar" IsOpen="True" IsIconVisible="True" Severity="Informational" 
+                 Title="检查结果" Message="Test">
+            <InfoBar.ActionButton >
+                <Button Content="跳转" Visibility="Visible" HorizontalAlignment="Right"></Button>
+            </InfoBar.ActionButton>
+        </InfoBar>
+
     </Grid>
 </Page>

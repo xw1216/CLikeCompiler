@@ -8,7 +8,43 @@
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
-    <Grid>
+    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="4*"/>
+            <RowDefinition Height="1*"/>
+            <RowDefinition Height="1*"/>
+            <RowDefinition Height="2*"/>
+            <RowDefinition Height="1*"/>
+            <RowDefinition Height="1*"/>
+        </Grid.RowDefinitions>
         
+        <Image Source="ms-appx:///Assets/ProjLogo.png" Margin="0, 14, 14, 0" 
+               Width="300" VerticalAlignment="Center"/>
+
+        <Image Grid.Row="1" Source="ms-appx:///Assets/ProjName.png" Height="80" 
+               Margin="0, 14, 14, 0"  VerticalAlignment="Center"/>
+        
+        <TextBlock Grid.Row="2"  FontSize="28" Text="欢迎使用 OSCC ！"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        
+        <RichTextBlock Grid.Row="3"  Margin="0, 14, 14, 0" TextAlignment="Center" 
+                       HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <Paragraph FontSize="16" Margin="0, 8, 8, 0">
+                本应用为一遍式的 C-Like 编译器
+            </Paragraph>
+            <Paragraph FontSize="16" Margin="0, 8, 8, 0">
+                完整实现了编译器前后端
+            </Paragraph>
+            <Paragraph FontSize="16" Margin="0, 8, 8, 0">
+                点击按钮开始工作
+            </Paragraph>
+        </RichTextBlock>
+        
+        <Button Grid.Row="4" Content="开始" Width="140" Height="40"
+                VerticalAlignment="Top" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                Click="StartButton_Click"/>
+        
+        <TextBlock Grid.Row="5" Text="2022 (c) Outspace." Margin="0, 0, 0, 14"
+                   HorizontalAlignment="Center" VerticalAlignment="Bottom"/>
     </Grid>
 </Page>
