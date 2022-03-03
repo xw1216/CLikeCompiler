@@ -45,7 +45,7 @@ namespace CLikeCompiler.Pages
             picker.FileTypeFilter.Add("*");
             picker.FileTypeFilter.Add(".txt");
 
-            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(MainWindow.mainPage);
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(MainWindow.GetInstance());
             WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
             
             Windows.Storage.StorageFile file = await picker.PickSingleFileAsync();
@@ -55,16 +55,35 @@ namespace CLikeCompiler.Pages
                 codeBox.Text = await Windows.Storage.FileIO.ReadTextAsync(file);
             } else
             {
-                MainWindow.mainPage.ShowErrorPage("无法打开代码文件");
+                MainWindow.GetInstance().ShowErrorPage("无法打开代码文件");
             }
         }
 
         private void CheckPassJumpBtnClick(object sender, RoutedEventArgs e)
         {
             infoBar.Visibility = Visibility.Collapsed;
-            MainWindow.mainPage.PageTagNavigation("MidCodePage");
+            MainWindow.GetInstance().PageTagNavigation("MidCodePage");
+        }
+
+        private void StartCompileClick(object sender, RoutedEventArgs e)
+        {
+            string src = codeBox.Text;
+            CheckCodeEmpty(src);
+
+
+        }
+
+        private void CheckCodeEmpty(string code)
+        {
+            if (code.Trim().Length < 1)
+            {
+                MainWindow.GetInstance().ShowErrorPage("请勿置空或输入全为空白字符。", "源码出错");
+            }
         } 
+
     }
+
+    
 
     
 }

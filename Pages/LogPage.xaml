@@ -27,6 +27,11 @@
             </AppBarButton>
 
             <CommandBar.SecondaryCommands >
+                <AppBarButton Icon="Flag" Label="测试日志" Click="TestLogClick">
+                    <AppBarButton.KeyboardAccelerators>
+                        <KeyboardAccelerator Modifiers="Control" Key="P" />
+                    </AppBarButton.KeyboardAccelerators>
+                </AppBarButton>
                 <AppBarButton Icon="Clear" Label="清空日志" Click="ClearLogClick">
                     <AppBarButton.KeyboardAccelerators>
                         <KeyboardAccelerator Modifiers="Control" Key="Delete" />
@@ -39,7 +44,7 @@
             </CommandBar.Content>
         </CommandBar>
 
-        <ListView Grid.Row="1" ItemsSource="{x:Bind data:LogUtility.logger.LogDisplayed}"
+        <ListView Grid.Row="1" ItemsSource="{x:Bind data:LogUtility.LogDisplayed}"
                   HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="14, 14, 14, 14">
             <ListView.ItemContainerTransitions>
                 <TransitionCollection>
@@ -52,12 +57,12 @@
                     <StackPanel Orientation="Horizontal" Margin="14, 0, 14, 0">
                         <Grid>
                             <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xF138;" />
-                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xF13F;" />
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="{x:Bind GetServerityFont()}" />
                         </Grid>
                         <StackPanel Margin="14, 0, 0, 0">
                             <TextBlock Text="{x:Bind Content}" FontWeight="Bold" Margin="8,0,0,0" Padding="0, 4, 0, 4" 
                                        FontSize="18" TextWrapping="Wrap"/>
-                            <TextBlock Text="{x:Bind GetTimeStr()}" Margin="8,0,0,0" Padding="0, 0, 0, 4" FontSize="12"/>
+                            <TextBlock Text="{x:Bind GetTipStr()}" Margin="8,0,0,0" Padding="0, 0, 0, 4" FontSize="12"/>
                         </StackPanel>
                     </StackPanel>
                 </DataTemplate>

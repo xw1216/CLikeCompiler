@@ -14,6 +14,7 @@ using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using System.Threading.Tasks;
 
 using CLikeCompiler.Libs;
 using CLikeCompiler.Pages;
@@ -28,8 +29,10 @@ namespace CLikeCompiler
     /// </summary>
     public sealed partial class MainWindow : Window
     {
-        public static MainWindow mainPage;
-        private LogUtility logger;
+        private static MainWindow Host;
+        public LogUtility logger;
+        public Compiler server;
+
 
         public MainWindow()
         {
@@ -37,14 +40,19 @@ namespace CLikeCompiler
             SetWindowTitleBar();
             RegisterAllComponents();
             ShowWelcomePage();
+        }
 
+        public static ref MainWindow GetInstance()
+        {
+            return ref Host;
         }
 
         private void RegisterAllComponents()
         {
-            mainPage = this;
-            logger = new LogUtility();
-            LogUtility.logger = logger;
+            Host = this;
+            logger = LogUtility.GetInstance();
+            logger.Initialize();
+            server = Compiler.GetInstance();
         }
 
         private void SetWindowTitleBar()
@@ -67,7 +75,7 @@ namespace CLikeCompiler
             FrameNavigation(selectedItem);
         }
 
-        private void ShowWelcomePage()
+        private  void ShowWelcomePage()
         {
             SideNav.SelectedItem = welcomViewItem;
         }

@@ -29,27 +29,26 @@ namespace CLikeCompiler.Pages
         public LogPage()
         {
             this.InitializeComponent();
-            AddLogItem();
-        }
-
-        private void AddLogItem()
-        {
-            LogUtility logger =  MainWindow.mainPage.GetLogger();
-            logger.NewLogRecord("Test1", LogItem.MsgType.INFO);
-            logger.NewLogRecord("Test2", LogItem.MsgType.INFO);
-            logger.NewLogRecord("Test3", LogItem.MsgType.INFO);
         }
 
         private void MoreLogClick(object sender, RoutedEventArgs e)
         {
-            LogUtility.logger.OpenLogInNotepad();
-            MainWindow.mainPage.ShowErrorPage("若要继续，请先关闭日志文件。", "提示");
-            
+            LogUtility.GetInstance().OpenLogInNotepad();
+            MainWindow.GetInstance().ShowErrorPage("若要继续，请先关闭日志文件。", "提示");
         }
 
         private void ClearLogClick(object sender, RoutedEventArgs e)
         {
-            LogUtility.logger.ClearDisplayRecord();
+            LogUtility.GetInstance().ClearDisplayRecord();
+        }
+
+        private void TestLogClick(object sender, RoutedEventArgs e)
+        {
+            CompilerReportArgs args = new(LogItem.MsgType.WARN, "Test");
+            CompilerReportArgs arg = new(LogItem.MsgType.ERROR, "Test");
+            MainWindow.GetInstance().GetLogger().NewLogRecord("Test", LogItem.MsgType.INFO);
+            MainWindow.GetInstance().server.ReportBackInfo(this, args);
+            MainWindow.GetInstance().server.ReportFrontInfo(this, arg);
         }
     }
 }

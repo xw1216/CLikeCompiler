@@ -61,19 +61,6 @@
     <ProjectCapability Include="Msix" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Update="Res\res.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>res.resx</DependentUpon>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Update="Res\res.resx">
-      <Generator>PublicResXFileCodeGenerator</Generator>
-      <LastGenOutput>res.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
     <Page Update="Pages\ErrorDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>

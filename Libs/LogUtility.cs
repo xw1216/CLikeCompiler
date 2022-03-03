@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
+using Windows.Storage;
+using System.Runtime.CompilerServices;
 
 namespace CLikeCompiler.Libs
 { 
@@ -38,15 +40,20 @@ namespace CLikeCompiler.Libs
             return Time.ToString("G");
         }
 
+        public string GetTipStr()
+        {
+            return GetServerityStr() + "  " + Time.ToString("G");
+        }
+
         public string GetServerityFont()
         {
             
             // {x:Bind GetServerityFont()}
             return Serverity switch
             {
-                MsgType.INFO => "\uF13F;",
-                MsgType.WARN => "\uF13C;",
-                MsgType.ERROR => "\uF13D;",
+                MsgType.INFO => "\uF142",
+                MsgType.WARN => "\uF13C",
+                MsgType.ERROR => "\uF13D",
                 _ => "\uF13D;",
             };
         }
@@ -55,34 +62,44 @@ namespace CLikeCompiler.Libs
         {
             return Serverity switch
             {
-                MsgType.INFO => "Info",
-                MsgType.WARN => "Warning",
-                MsgType.ERROR => "Error",
-                _ => "Error",
+                MsgType.INFO => "提示",
+                MsgType.WARN => "警告",
+                MsgType.ERROR => "错误",
+                _ => "错误",
             };
         }
 
     }
     public class LogUtility
     {
-        public static LogUtility logger;
-        private static SemaphoreSlim semaphore;
-        private Windows.Storage.StorageFile logFile;
+        private static LogUtility logger = new();
+
+        private SemaphoreSlim semaphore;
+        private StorageFile logFile;
         private readonly int logDispCnt = 30;
-        public ObservableCollection<LogItem> logDisplayed = new();
-        public ObservableCollection<LogItem> LogDisplayed { get { return this.logDisplayed; } }
+        private static ObservableCollection<LogItem> logDisplayed = new();
+        public static ObservableCollection<LogItem> LogDisplayed { get { return logDisplayed; } }
 
         public LogUtility()
         {
-            OpenLogHandle();
             semaphore = new SemaphoreSlim(1, 1);
+        }
+
+        public void Initialize()
+        {
+            OpenLogHandle();
+        }
+
+        public static ref LogUtility GetInstance()
+        {
+            return ref logger;
         }
 
         private async void OpenLogHandle()
         {
             Windows.Storage.StorageFolder storageFolder = 
                 Windows.Storage.ApplicationData.Current.LocalFolder;
-            logFile = await storageFolder.CreateFileAsync("Log.txt", 
+            logFile = await storageFolder.CreateFileAsync("Log.txt",
                 Windows.Storage.CreationCollisionOption.OpenIfExists);
             await Windows.Storage.FileIO.WriteTextAsync(logFile, "");
         }
@@ -123,6 +140,16 @@ namespace CLikeCompiler.Libs
         public void ClearDisplayRecord()
         {
             logDisplayed.Clear();
+            
+        }
+
+        public static bool IsLogEmpty()
+        {
+            if(logDisplayed == null || logDisplayed.Count > 0)
+            {
+                return true;
+            } 
+            return false;
         }
 
     }

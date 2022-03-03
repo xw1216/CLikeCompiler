@@ -30,7 +30,7 @@ namespace CLikeCompiler.Pages
 
         private void StartButton_Click(object sender, RoutedEventArgs e)
         {
-            MainWindow.mainPage.PageTagNavigation("SrcInputPage");
+            MainWindow.GetInstance().PageTagNavigation("SrcInputPage");
         }
     }
 }
