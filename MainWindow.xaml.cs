@@ -131,5 +131,20 @@ namespace CLikeCompiler
             dialog.XamlRoot = SideNav.XamlRoot;
             await dialog.ShowAsync();
         }
+
+        public void StartCompile(string src)
+        {
+            try {
+
+            }
+            catch (Exception ex) {
+                
+            } finally  {
+
+            }
+        }
+
     }
+
+    
 }

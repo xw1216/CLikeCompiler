@@ -34,6 +34,8 @@ namespace CLikeCompiler.Libs
         internal static TargGenServer targGen;
         internal static ResourceLoader resFile;
 
+        private string rootPath;
+
         public Compiler()
         {
             prepro = new PreproServer();
@@ -50,6 +52,21 @@ namespace CLikeCompiler.Libs
             return ref compiler;
         }
 
+        internal bool StartPrePro(ref string input, ref string output, ref MacroTable table)
+        {
+            try
+            {
+                prepro.StartPrePro(ref input);
+                output = prepro.GetSrc();
+                prepro.GetMacroTable(ref table);
+            } catch (Exception)
+            {
+                CompilerReportArgs args = new(LogItem.MsgType.ERROR, "停止解析");
+                ReportBackInfo(this, args);
+                return false;
+            }
+            return true;
+        }
 
 
         internal void ReportFrontInfo(object sender, CompilerReportArgs e)
@@ -71,10 +88,23 @@ namespace CLikeCompiler.Libs
         {
             if(resFile == null)
                 ReportBackInfo(this, new CompilerReportArgs(LogItem.MsgType.ERROR, "资源文件丢失"));
-            string partName = resFile.GetString("GramServer");
+            string partName = resFile.GetString(sender.GetType().Name);
             if(partName == null)
                 partName = "资源文件";
             return partName;
+        }
+
+        public void SetRootPath(string path)
+        {
+            rootPath = path;
+            int startPos = path.LastIndexOf(@"\");
+            path.Remove(startPos);
+            PreproServer.SetRootPath(ref path);
+        }
+
+        internal string GetRootPath()
+        {
+            return rootPath;
         }
         
     }

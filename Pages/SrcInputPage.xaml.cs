@@ -49,6 +49,7 @@ namespace CLikeCompiler.Pages
             WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
             
             Windows.Storage.StorageFile file = await picker.PickSingleFileAsync();
+            MainWindow.GetInstance().server.SetRootPath(file.Path);
 
             if (file != null)
             {
@@ -69,7 +70,7 @@ namespace CLikeCompiler.Pages
         {
             string src = codeBox.Text;
             CheckCodeEmpty(src);
-
+            MainWindow.GetInstance().StartCompile(src);
 
         }
 
