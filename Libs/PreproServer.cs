@@ -49,6 +49,7 @@ namespace CLikeCompiler.Libs
         {
             src.Replace('\t', ' ');
             src.Replace("\r", "");
+            src.Trim();
             this.src = new(src);
         }
 
@@ -150,7 +151,7 @@ namespace CLikeCompiler.Libs
         private StringBuilder GetIncludeFile(string filename)
         {
             if(filename.Length == 0) { return null; }
-            string filePath = Compiler.GetInstance().GetRootPath() + @"\" + filename + ".txt";
+            string filePath = rootPath + @"\" + filename + ".txt";
             SendFrontMessage("处理包含子文件中：" + filename, LogItem.MsgType.INFO);
 
             string text;
@@ -166,7 +167,7 @@ namespace CLikeCompiler.Libs
             ProcFileRecurs(ref text);
 
             SendFrontMessage("离开子文件：" + filename, LogItem.MsgType.INFO);
-            return new StringBuilder(text);
+            return new StringBuilder("\n" + text + "\n");
         }
 
         private void ProcFileRecurs(ref string src)
