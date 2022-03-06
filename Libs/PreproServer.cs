@@ -58,6 +58,11 @@ namespace CLikeCompiler.Libs
             return src.ToString();
         }
 
+        public static string GetPath()
+        {
+            return rootPath;
+        }
+
         public static void SetRootPath(ref string path)
         {
             rootPath = path;
@@ -76,13 +81,13 @@ namespace CLikeCompiler.Libs
 
         private void SendFrontMessage(string msg, LogItem.MsgType type)
         {
-            CompilerReportArgs args = new(type, msg, this.linePos);
+            CompilerReportArgs args = new(type, msg, linePos);
             Compiler.GetInstance().ReportFrontInfo(this, args);
         }
 
         private void SendBackMessage(string msg, LogItem.MsgType type)
         {
-            CompilerReportArgs args = new(type, msg, this.linePos);
+            CompilerReportArgs args = new(type, msg, linePos);
             Compiler.GetInstance().ReportBackInfo(this, args);
         }
 
@@ -237,8 +242,6 @@ namespace CLikeCompiler.Libs
             int end = basePos;
             RemoveSrc(start, end);
         }
-
-
 
         private void RemoveSrc(int start, int end)
         {

@@ -34,8 +34,6 @@ namespace CLikeCompiler.Libs
         internal static TargGenServer targGen;
         internal static ResourceLoader resFile;
 
-        private string rootPath;
-
         public Compiler()
         {
             prepro = new PreproServer();
@@ -96,7 +94,6 @@ namespace CLikeCompiler.Libs
 
         public void SetRootPath(string path)
         {
-            rootPath = path;
             int startPos = path.LastIndexOf(@"\");
             path.Remove(startPos);
             PreproServer.SetRootPath(ref path);
@@ -104,8 +101,10 @@ namespace CLikeCompiler.Libs
 
         internal string GetRootPath()
         {
-            return rootPath;
+            return PreproServer.GetPath();
         }
+
+
         
     }
 }

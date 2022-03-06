@@ -6,6 +6,18 @@ using System.Threading.Tasks;
 
 namespace CLikeCompiler.Libs
 {
+    internal class LexUnit
+    {
+        internal enum Type
+        {
+            ID, KEYWD, OP,
+            INT, DEC, STR
+        }
+
+        internal Type type;
+        internal string cont;
+    }
+
     internal class LexServer
     {
         private static Dictionary<string, string> keywords = new Dictionary<string, string>() { 
@@ -26,16 +38,22 @@ namespace CLikeCompiler.Libs
             {"[","lsbrc" }, {"]","rsbrc" },{":","colon" }
         };
 
-        private readonly string idKey = "id";
-        private readonly string intKey = "integer";
-        private readonly string decKey = "decimal";
-        private readonly string stringKey = "str";
+        private readonly char newlineNote = '\n';
+        private readonly char whiteNote = ' ';
+        private readonly char stringNote = '"';
+        private readonly char dotNote = '.';
 
         private string src;
+        private bool isEnd;
 
-        private string unitType;
-        private string unitCont;
         private int linePos;
+        private int basePos;
+        private int rearPos;
+
+        public LexServer()
+        {
+            ResetLex();
+        }
 
         private void SetSrc(ref string src)
         {
@@ -44,23 +62,179 @@ namespace CLikeCompiler.Libs
 
         private void ResetLex()
         {
-            this.src = "";
-            this.unitType = "";
-            this.unitCont = "";
-            this.linePos = 1;
+            src = "";
+            isEnd = false;
+            linePos = 1;
+            basePos = 0;
+            rearPos = 1;
         }
 
-        private bool GetUnit(out string type, out string cont)
+        private bool GetUnit(ref LexUnit unit)
         {
-            if(src.Length == 0) {
-                type = null;
-                cont = null;
+            if(isEnd || src.Length == 0 || unit == null) 
+            { 
+                unit = null;
                 return false; 
             }
 
-
+            return StartLexStep(ref unit);
         }
 
+        private bool StartLexStep(ref LexUnit unit)
+        {
+            if(isEnd) { unit = null;  return false; }
+            for(; basePos < src.Length; basePos++, rearPos++)
+            {
+                if(src[basePos] == 0) { unit = null;  return false; }
+                else if(src[basePos] == newlineNote) { linePos++; continue; }
+                else if(src[basePos] == whiteNote) { continue; }
+                else if(src[basePos] == stringNote) 
+                {
+                    StringHandler(ref unit);
+                    return !isEnd;
+                }
+                else if(IsNumber(src[basePos]))
+                {
+                    NumberHandler(ref unit);
+                    return !isEnd;
+                } 
+                else if(IsIdentifierChar(src[basePos]))
+                {
+                    IdHanlder(ref unit);
+                    return !isEnd;
+                } 
+                else
+                {
+                    if(OpratorHandler(ref unit))
+                    {
+                        return !isEnd;
+                    }
+                    SendFrontMessage("不能识别的字符", LogItem.MsgType.ERROR);
+                    throw new Exception();
+                }
+            }
+            unit = null;
+            isEnd = true;
+            return false;
+        }
+
+        private bool OpratorHandler(ref LexUnit unit) 
+        {
+            char first = src[basePos], last;
+            StringBuilder builder = new();
+            builder.Append(first);
+            if(IsOprators(builder.ToString(), out string valueA))
+            {
+                unit.type = LexUnit.Type.OP;
+                if (rearPos < src.Length)
+                {
+                    last = src[rearPos];
+                    builder.Append(last);
+                    if(IsOprators(builder.ToString(), out string valueB))
+                    {
+                        unit.cont = valueB;
+                        rearPos += 2;
+                        UpdatePosHandlerEnd();
+                        return true;
+                    }
+                }
+                unit.cont = valueA;
+                rearPos += 1;
+                UpdatePosHandlerEnd();
+                return true;
+            }
+            return false;
+        }
+
+        private void IdHanlder(ref LexUnit unit)
+        {
+            string cont;
+            for (; rearPos < src.Length; rearPos++)
+            {
+                if(!(IsIdentifierChar(src[rearPos])))
+                {
+                    break;
+                }
+            }
+
+            cont = src.Substring(basePos, rearPos - basePos);
+            if(IsKeyword(ref cont, out string type))
+            {
+                unit.type = LexUnit.Type.KEYWD;
+                unit.cont = type;
+            } else
+            {
+                unit.type = LexUnit.Type.ID;
+                unit.cont = cont;
+            }
+
+            UpdatePosHandlerEnd();
+            return;
+        }
+
+        private void NumberHandler(ref LexUnit unit)
+        {
+            string num;
+            for(; rearPos < src.Length; rearPos++)
+            {
+                if(!(src[rearPos] == dotNote || IsNumber(src[rearPos])))
+                {
+                    break;
+                }
+            }
+            num = src.Substring(basePos, rearPos - basePos);
+            unit.cont = num;
+            if (num.Contains(dotNote)) { unit.type = LexUnit.Type.DEC; }
+            else { unit.type = LexUnit.Type.INT; }
+
+            UpdatePosHandlerEnd();
+            return;
+        }
+
+        private void StringHandler(ref LexUnit unit)
+        {
+            for(; rearPos < src.Length; rearPos++)
+            {
+                if(src[rearPos] == stringNote)
+                {
+                    unit.type = LexUnit.Type.STR;
+                    unit.cont = src.Substring(basePos, rearPos - basePos + 1);
+                    if(unit.cont.First() == stringNote) { unit.cont.Remove(0, 1); }
+                    RemoveStrNote(unit.cont);
+                    rearPos++;
+                    UpdatePosHandlerEnd();
+                    return;
+                } else if(src[rearPos] == newlineNote)
+                {
+                    linePos++;
+                }
+            }
+            SendFrontMessage("未闭合的字符串", LogItem.MsgType.ERROR);
+            throw new Exception();
+        }
+
+        private string RemoveStrNote(string str)
+        {
+            if (str.First() == stringNote) { str.Remove(0, 1); }
+            if(str.Last() == stringNote) { str.Remove(str.Length - 1 , 1); }
+            return str;
+        } 
+
+        // Make sure that rearPos is at n+1 while the last character in content is at n
+        private void UpdatePosHandlerEnd()
+        {
+            if(rearPos >= src.Length)
+            {
+                isEnd = true;
+                basePos = src.Length;
+                rearPos = basePos + 1;
+            } else
+            {
+                isEnd= false;
+                basePos = rearPos;
+                rearPos++;
+            }
+        }
 
         private bool IsIdentifierChar(char c)
         {
@@ -81,7 +255,7 @@ namespace CLikeCompiler.Libs
             }
         }
 
-        private bool IsOprators(ref string key, out string value)
+        private bool IsOprators(string key, out string value)
         {
             bool isIn = operators.ContainsKey(key);
             if (isIn)
@@ -105,7 +279,19 @@ namespace CLikeCompiler.Libs
         {
             return (c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z');
         }
+
+        private void SendFrontMessage(string msg, LogItem.MsgType type)
+        {
+            CompilerReportArgs args = new(type, msg, linePos);
+            Compiler.GetInstance().ReportFrontInfo(this, args);
+        }
+
+        private void SendBackMessage(string msg, LogItem.MsgType type)
+        {
+            CompilerReportArgs args = new(type, msg, linePos);
+            Compiler.GetInstance().ReportBackInfo(this, args);
+        }
+
     }
 
-    
 }
