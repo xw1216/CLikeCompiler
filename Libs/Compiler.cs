@@ -28,16 +28,23 @@ namespace CLikeCompiler.Libs
         private static Compiler compiler = new();
         internal static PreproServer prepro;
         internal static LexServer lex;
+        internal static GramParser parser;
         internal static GramServer gram;
         internal static MidGenServer midGen;
         internal static OptiServer opti;
         internal static TargGenServer targGen;
         internal static ResourceLoader resFile;
 
-        public Compiler()
+        private Compiler()
+        {
+            RegisterComponents();
+        }
+
+        private void RegisterComponents()
         {
             prepro = new PreproServer();
             lex = new LexServer();
+            parser = new GramParser();
             gram = new GramServer();
             midGen = new MidGenServer();
             opti = new OptiServer();
@@ -59,13 +66,26 @@ namespace CLikeCompiler.Libs
                 prepro.GetMacroTable(ref table);
             } catch (Exception)
             {
-                CompilerReportArgs args = new(LogItem.MsgType.ERROR, "停止解析");
+                CompilerReportArgs args = new(LogItem.MsgType.ERROR, "停止预处理");
                 ReportBackInfo(this, args);
                 return false;
             }
             return true;
         }
 
+        internal bool StartGramParse()
+        {
+            try
+            {
+                parser.StartGramParse();
+            } catch (Exception)
+            {
+                CompilerReportArgs args = new(LogItem.MsgType.ERROR, "停止文法解析");
+                ReportBackInfo(this, args);
+                return false;
+            }
+            return true;
+        }
 
         internal void ReportFrontInfo(object sender, CompilerReportArgs e)
         {
@@ -84,9 +104,7 @@ namespace CLikeCompiler.Libs
 
         private string GetComponentName(object sender)
         {
-            if(resFile == null)
-                ReportBackInfo(this, new CompilerReportArgs(LogItem.MsgType.ERROR, "资源文件丢失"));
-            string partName = resFile.GetString(sender.GetType().Name);
+            string partName = GetStrFromResw(sender.GetType().Name);
             if(partName == null)
                 partName = "资源文件";
             return partName;
@@ -102,6 +120,20 @@ namespace CLikeCompiler.Libs
         internal string GetRootPath()
         {
             return PreproServer.GetPath();
+        }
+
+        internal string GetStrFromResw(string key)
+        {
+            if(resFile == null)
+            {
+                ReportBackInfo(this, new CompilerReportArgs(LogItem.MsgType.ERROR, "资源文件丢失"));
+            }
+            string value = resFile.GetString(key);
+            if(value == null) 
+            {
+                ReportBackInfo(this, new CompilerReportArgs(LogItem.MsgType.ERROR, "资源中不存在该字符串："+ key));
+            }
+            return value;
         }
 
 

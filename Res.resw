@@ -120,6 +120,51 @@
   <data name="Compiler" xml:space="preserve">
     <value>编译器总控</value>
   </data>
+  <data name="Grammar" xml:space="preserve">
+    <value>Program @ DeclareCluster
+DeclareCluster @ Declare DeclareClusterLoop
+DeclareClusterLoop @ Declare DeclareClusterLoop | $blank
+Declare @ VarType Id TypeDeclare | VarType Id FuncDeclare | $void Id FuncDeclare
+TypeDeclare @ VarDeclare | ArrayDeclare
+VarDeclare @ $smc
+FuncDeclare @ $lpar FormParam $rpar StateBlock
+ArrayDeclare @ $lsbrc $integer $lsbrc ArrayDeclareLoop $smc
+ArrayDeclareLoop @ $lsbrc $integer $lsbrc ArrayDeclareLoop | $blank
+FormParam @ ParamList | void
+ParamList @ Param ParamListLoop
+ParamListLoop @ $cma Param ParamListLoop | $blank
+Param @ VarType Id
+Args @ ArgsList | $blank
+ArgsList @ Expr ArgListLoop
+ArgListLoop @ $cma Expr ArgListLoop | $blank
+StateBlock @ $lbrc InnerDeclare StateCluster $rbrc
+InnerDeclare @ $blank | InnerVarDeclare $smc InnerDeclareLoop
+InnerDeclareLoop @ InnerVarDeclare $smc InnerDeclareLoop | $blank
+InnerVarDeclare @ VarType Id
+StateCluster @ State StateClusterLoop
+StateClusterLoop @ State StateClusterLoop | $blank
+State @ If | While | Return | Assign
+Assign @ Id $assign Expr $smc | Array $assign Expr $smc
+Return @ $return ReturnAlter $smc
+ReturnAlter @ Expr | $blank
+While @ $while $lpar Expr $rpar StateBlock
+If @ $if $lpar Expr $rpar StateBlock IfAlter
+IfAlter @ $else StateBlock | $blank
+Expr @ AddExpr ExprLoop
+ExprLoop @ Relop AddExpr ExprLoop | $blank
+AddExpr @ Item AddExprLoop
+AddExprLoop @ $plus Item AddExprLoop | $sub Item AddExprLoop | $blank
+Item @ Factor ItemLoop
+ItemLoop @ $mul Factor ItemLoop | $div Factor ItemLoop | $blank
+Factor @ Num | $string | $true | $false | $lpar Expr $rpar | Id CallType | Array
+CallType @ Call | $blank
+Call @ $lpar Args $rpar
+Array @ Id $lsbrc Expr $rsbrc | Array $lsbrc Expr $rsbrc
+Id @ $id
+VarType @ $int | $long | $float | $double | $bool | $string
+Num @ $integer | $decimal
+Relop @ $eq | $neq | $leq | $geq | $gre | $les</value>
+  </data>
   <data name="GramParser" xml:space="preserve">
     <value>语法解析器</value>
   </data>

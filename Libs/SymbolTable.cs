@@ -6,9 +6,6 @@ using System.Threading.Tasks;
 
 namespace CLikeCompiler.Libs
 {
-    internal class Symbols
-    {
-    }
 
     internal class MacroTable
     {

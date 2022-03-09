@@ -16,6 +16,7 @@ namespace CLikeCompiler.Libs
 
         internal Type type;
         internal string cont;
+        internal int line;
     }
 
     internal class LexServer
@@ -80,6 +81,11 @@ namespace CLikeCompiler.Libs
             return StartLexStep(ref unit);
         }
 
+        internal bool IsKeyRecog(ref string str)
+        {
+            return  (keywords.ContainsValue(str) || operators.ContainsValue(str));
+        }
+
         private bool StartLexStep(ref LexUnit unit)
         {
             if(isEnd) { unit = null;  return false; }
@@ -126,6 +132,7 @@ namespace CLikeCompiler.Libs
             if(IsOprators(builder.ToString(), out string valueA))
             {
                 unit.type = LexUnit.Type.OP;
+                unit.line = linePos;
                 if (rearPos < src.Length)
                 {
                     last = src[rearPos];
@@ -167,7 +174,7 @@ namespace CLikeCompiler.Libs
                 unit.type = LexUnit.Type.ID;
                 unit.cont = cont;
             }
-
+            unit.line = linePos;
             UpdatePosHandlerEnd();
             return;
         }
@@ -186,6 +193,7 @@ namespace CLikeCompiler.Libs
             unit.cont = num;
             if (num.Contains(dotNote)) { unit.type = LexUnit.Type.DEC; }
             else { unit.type = LexUnit.Type.INT; }
+            unit.line = linePos;
 
             UpdatePosHandlerEnd();
             return;
@@ -201,6 +209,7 @@ namespace CLikeCompiler.Libs
                     unit.cont = src.Substring(basePos, rearPos - basePos + 1);
                     if(unit.cont.First() == stringNote) { unit.cont.Remove(0, 1); }
                     RemoveStrNote(unit.cont);
+                    unit.line = linePos;
                     rearPos++;
                     UpdatePosHandlerEnd();
                     return;
