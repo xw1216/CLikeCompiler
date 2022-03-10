@@ -37,6 +37,9 @@ namespace CLikeCompiler.Libs
         
         internal bool BeRef() { return refCnt > 0; }
 
+        internal bool IsTerm() { return form == Form.TERM; }
+        internal bool IsNTerm() { return form == Form.NONTERM; }
+
     }
 
     internal class Term : Symbols
@@ -56,9 +59,9 @@ namespace CLikeCompiler.Libs
             return Form.TERM;
         }
 
-        internal bool IsTerm(ref string str)
+        internal bool CanTermRecog(ref string str)
         {
-            return Compiler.lex.IsKeyRecog(ref str);
+            return Compiler.lex.IsKeyRecog(str);
         }
     }
 
@@ -66,9 +69,9 @@ namespace CLikeCompiler.Libs
     {
         internal int prodIndex { get; set; }
 
-        List<Term> first = new();
-        List<Term> follow = new();
-        List<Term> synch = new();
+        internal List<Term> first = new();
+        internal List<Term> follow = new();
+        internal List<Term> synch = new();
 
         internal bool IsNullable()
         {

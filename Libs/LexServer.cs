@@ -81,7 +81,7 @@ namespace CLikeCompiler.Libs
             return StartLexStep(ref unit);
         }
 
-        internal bool IsKeyRecog(ref string str)
+        internal bool IsKeyRecog(string str)
         {
             return  (keywords.ContainsValue(str) || operators.ContainsValue(str));
         }

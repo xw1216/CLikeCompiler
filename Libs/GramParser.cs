@@ -15,6 +15,13 @@ namespace CLikeCompiler.Libs
         private List<Term> terms = new List<Term>();
         private List<NTerm> nTerms = new List<NTerm>();
 
+        private NTerm startNTerm;
+
+        internal GramParser()
+        {
+            ResetGramParser();
+        }
+
         internal void StartGramParse()
         {
             GetGramSrc();
@@ -27,6 +34,17 @@ namespace CLikeCompiler.Libs
             terms.Clear();
             nTerms.Clear();
             prods.Clear();
+            startNTerm = null;
+        }
+
+        internal void AddNewNTerm(NTerm nTerm) 
+        { 
+            nTerms.Add(nTerm);
+        }
+
+        internal NTerm GetStartNTerm()
+        {
+            return startNTerm;
         }
 
         internal void GetSymbolRefs(ref List<Prod> prods, ref List<Term> terms, ref List<NTerm> nTerms)
@@ -44,6 +62,8 @@ namespace CLikeCompiler.Libs
 
         private void RuleParse()
         {
+            terms.Add(Term.end);
+            Term.end.IncRef();
             List<string> rules = new (gramSrc.Replace("\r","").Split('\n', 
                 StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries));
             foreach (string rule in rules)
@@ -91,8 +111,16 @@ namespace CLikeCompiler.Libs
                 else if(str[pos]== '$')
                 {
                     pos  = SubNameCut(ref builder, ref str, pos + 1);
+                    if(!(Compiler.lex.IsKeyRecog(builder.ToString())))
+                    {
+                        Compiler.GetInstance().ReportBackInfo(this,
+                        new CompilerReportArgs(LogItem.MsgType.ERROR, "无法识别的文法终结符符号"));
+                    }
                     Term term = CreateGetTerm(builder.ToString());
-                    prod.AddSubProdUnit(term);
+                    if(term != null)
+                    {
+                        prod.AddSubProdUnit(term);
+                    }
                     builder.Clear();
                 } 
                 else if(IsLetter(str[pos]))
@@ -156,6 +184,10 @@ namespace CLikeCompiler.Libs
             }
 
             NTerm newNTerm = new();
+            if(startNTerm == null)
+            {
+                startNTerm = newNTerm;
+            }
             newNTerm.SetName(name);
             newNTerm.IncRef();
             nTerms.Add(newNTerm);
