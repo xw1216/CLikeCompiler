@@ -39,6 +39,7 @@ namespace CLikeCompiler.Libs
 
         internal bool IsTerm() { return form == Form.TERM; }
         internal bool IsNTerm() { return form == Form.NONTERM; }
+        internal bool IsAction() { return form == Form.ACTION; }
 
     }
 

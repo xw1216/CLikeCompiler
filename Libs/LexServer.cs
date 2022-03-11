@@ -15,6 +15,7 @@ namespace CLikeCompiler.Libs
         }
 
         internal Type type;
+        internal string name;
         internal string cont;
         internal int line;
     }
@@ -70,11 +71,15 @@ namespace CLikeCompiler.Libs
             rearPos = 1;
         }
 
-        private bool GetUnit(ref LexUnit unit)
+        internal bool GetUnit(out LexUnit unit)
         {
-            if(isEnd || src.Length == 0 || unit == null) 
-            { 
-                unit = null;
+            unit = new();
+            if(isEnd || src.Length == 0) 
+            {
+                unit.type = LexUnit.Type.OP;
+                unit.name = "end";
+                unit.cont = "end";
+                unit.line = linePos;
                 return false; 
             }
 
@@ -136,16 +141,20 @@ namespace CLikeCompiler.Libs
                 if (rearPos < src.Length)
                 {
                     last = src[rearPos];
-                    builder.Append(last);
-                    if(IsOprators(builder.ToString(), out string valueB))
+                    StringBuilder inBuilder = new();
+                    inBuilder.Append(first);
+                    inBuilder.Append(last);
+                    if(IsOprators(inBuilder.ToString(), out string valueB))
                     {
-                        unit.cont = valueB;
+                        unit.name = valueB;
+                        unit.cont = inBuilder.ToString();
                         rearPos += 2;
                         UpdatePosHandlerEnd();
                         return true;
                     }
                 }
-                unit.cont = valueA;
+                unit.name = valueA;
+                unit.cont = builder.ToString();
                 rearPos += 1;
                 UpdatePosHandlerEnd();
                 return true;
@@ -168,10 +177,12 @@ namespace CLikeCompiler.Libs
             if(IsKeyword(ref cont, out string type))
             {
                 unit.type = LexUnit.Type.KEYWD;
+                unit.name = type;
                 unit.cont = type;
             } else
             {
                 unit.type = LexUnit.Type.ID;
+                unit.name = "id";
                 unit.cont = cont;
             }
             unit.line = linePos;
@@ -191,8 +202,16 @@ namespace CLikeCompiler.Libs
             }
             num = src.Substring(basePos, rearPos - basePos);
             unit.cont = num;
-            if (num.Contains(dotNote)) { unit.type = LexUnit.Type.DEC; }
-            else { unit.type = LexUnit.Type.INT; }
+            if (num.Contains(dotNote)) 
+            { 
+                unit.type = LexUnit.Type.DEC;
+                unit.name = "decimal";
+            }
+            else 
+            { 
+                unit.type = LexUnit.Type.INT;
+                unit.name = "integer";
+            }
             unit.line = linePos;
 
             UpdatePosHandlerEnd();
@@ -206,6 +225,7 @@ namespace CLikeCompiler.Libs
                 if(src[rearPos] == stringNote)
                 {
                     unit.type = LexUnit.Type.STR;
+                    unit.name = "str";
                     unit.cont = src.Substring(basePos, rearPos - basePos + 1);
                     if(unit.cont.First() == stringNote) { unit.cont.Remove(0, 1); }
                     RemoveStrNote(unit.cont);

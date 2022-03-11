@@ -156,7 +156,7 @@ AddExpr @ Item AddExprLoop
 AddExprLoop @ $plus Item AddExprLoop | $sub Item AddExprLoop | $blank
 Item @ Factor ItemLoop
 ItemLoop @ $mul Factor ItemLoop | $div Factor ItemLoop | $blank
-Factor @ Num | $string | $true | $false | $lpar Expr $rpar | Id CallType | Array
+Factor @ Num | $str | $true | $false | $lpar Expr $rpar | Id CallType | Array
 CallType @ Call | $blank
 Call @ $lpar Args $rpar
 Array @ Id $lsbrc Expr $rsbrc | Array $lsbrc Expr $rsbrc

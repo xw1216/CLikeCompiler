@@ -1,22 +1,156 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace CLikeCompiler.Libs
 {
+
+    internal class PredictTableItem
+    {
+        internal Prod prod;
+        internal Form form;
+
+        internal enum Form
+        {
+            BLANK,
+            FILL,
+            SYNCH
+        }
+
+        internal bool IsBlank()
+        {
+            return form == Form.BLANK;
+        }
+    }
+
     internal class GramServer
     {
         private List<Prod> prods;
         private List<Term> terms;
         private List<NTerm> nTerms;
 
+        private List<string> termsName;
+
+        private PredictTableItem[,] table;
+        private AnalyStack stack = new();
+
         bool IsGramReady = false;
 
-        internal void GetParserResult()
+        private readonly string endStr = "end";
+
+        internal void ResetGramServer()
         {
-            Compiler.parser.GetSymbolRefs(ref prods, ref terms, ref nTerms);
+            prods = null;
+            terms = null;
+            nTerms = null;
+            table = null;
+            IsGramReady = false;
+            stack.ResetStack();
+        }
+
+        internal void BuildGram()
+        {
+            GetParserResult();
+            RemoveLeftRecur();
+            PrefixFactoring();
+            BuildPredictTable();
+            IsGramReady = true;
+        }
+
+        private void GetParserResult()
+        {
+            if(Compiler.parser.IsGramReady)
+            {
+                Compiler.parser.GetSymbolRefs(ref prods, ref terms, ref nTerms);
+            }
+            Compiler.GetInstance().ReportBackInfo(this,
+                        new CompilerReportArgs(LogItem.MsgType.ERROR,
+                        "未建立基础文法"));
+            throw new InvalidOperationException();
+        }
+
+        private void RecordTermsName()
+        {
+            termsName = new();
+            foreach(Term term in terms)
+            {
+                termsName.Add(term.GetName());
+            }
+        }
+
+        private void BuildPredictTable()
+        {
+            RecordTermsName();
+            InitTableItem();
+            foreach(Prod prod in prods)
+            {
+                List<List<Symbols>> rhs = prod.GetRhs();
+                foreach(List<Symbols> sub in rhs)
+                {
+                    List<Term> first = CalcuFirst(sub, prod.GetLhs());
+                    if(first.Contains(Term.blank))
+                    {
+                        List<Term> follow = CalcuFollow(prod.GetLhs());
+                        AddSetUnique(ref first, ref follow);
+                    }
+                    InsertTableItem(prod.GetLhs(), sub, first);
+                }
+                InsertSynchItem(prod.GetLhs());
+            }
+        }
+
+        private void InsertSynchItem(NTerm lhs)
+        {
+            int x = nTerms.IndexOf(lhs);
+            List<Term> follow = CalcuFollow(lhs);
+            foreach(Term term in follow)
+            {
+                int y = terms.IndexOf(term);
+                if(table[x, y].IsBlank())
+                {
+                    table[x, y].form = PredictTableItem.Form.SYNCH;
+                }
+            }
+        }
+
+        private void InsertTableItem(NTerm lhs, List<Symbols> rhs, List<Term> list)
+        {
+            Prod prod = new();
+            prod.SetLhs(lhs);
+            prod.AddSubProd(rhs);
+            int x = nTerms.IndexOf(lhs);
+
+            foreach(Term term in list)
+            {
+                int y = terms.IndexOf(term);
+                if(table[x, y].IsBlank())
+                {
+                    table[x, y].form = PredictTableItem.Form.FILL;
+                    table[x, y].prod = prod;
+                } else
+                {
+                    Compiler.GetInstance().ReportBackInfo(this,
+                                        new CompilerReportArgs(LogItem.MsgType.ERROR,
+                                        $"预测表入口冲突：非终结符 {lhs.GetName()} , 终结符 {term.GetName()}"));
+                    throw new InvalidOperationException();
+                }
+            }
+        }
+
+        private void InitTableItem()
+        {
+            table = new PredictTableItem[nTerms.Count, terms.Count];
+            for(int i = 0; i < table.GetLength(0); i++)
+            {
+                for(int j = 0; j < table.GetLength(1); j++)
+                {
+                    table[i, j] = new PredictTableItem();
+                    table[i, j].form = PredictTableItem.Form.BLANK;
+                }
+            }
         }
 
         private void RemoveLeftRecur()
@@ -46,11 +180,13 @@ namespace CLikeCompiler.Libs
                     DecSeqRef(list);
                 }
             }
-            foreach(Prod prod in prods)
+            for (int i = 0; i < prods.Count; i++)
             {
-                if(unused.Contains(prod.GetLhs()))
+                Prod prod = prods[i];
+                if (unused.Contains(prod.GetLhs()))
                 {
                     prods.Remove(prod);
+                    i--;
                 }
             }
             ReNoteNTermIndex();
@@ -115,8 +251,8 @@ namespace CLikeCompiler.Libs
                     foreach (List<Symbols> former in src.GetRhs())
                     {
                         List<Symbols> tmp = new();
-                        tmp.Concat(former);
-                        tmp.Concat(latter);
+                        tmp = tmp.Concat(former).ToList();
+                        tmp = tmp.Concat(latter).ToList();
                         IncSeqRef(tmp);
                         dst.GetRhs().Add(tmp);
                     }
@@ -154,19 +290,18 @@ namespace CLikeCompiler.Libs
             }
         }
 
-        private void AddFirstUnique(ref List<Term> first, Symbols sym)
+        private void AddSetUnique(ref List<Term> set, Symbols sym)
         {
             if (sym.IsTerm())
             {
-                first.Add((Term)sym);
-                first.Distinct();
+                set.Add((Term)sym);
+                set.Distinct();
             }
         }
 
-        private void AddFirstUnique(ref List<Term> first, ref List<Term> subFirst)
+        private void AddSetUnique(ref List<Term> set, ref List<Term> sub)
         {
-            first.Concat(subFirst);
-            first.Distinct();
+            set = set.Union(sub).ToList();
         }
 
         private void DirectRecurReplace(Prod src)
@@ -199,7 +334,7 @@ namespace CLikeCompiler.Libs
                 if(src.GetRhs()[i].Count != 0 &&
                     (src.GetRhs()[i].First() == src.GetLhs()))
                 {
-                    List<Symbols> tmp = src.GetRhs()[i];
+                    List<Symbols> tmp = new(src.GetRhs()[i]);
                     src.GetRhs().RemoveAt(i);
                     tmp.Add(newNTerm);
                     tmp.RemoveAt(0);
@@ -228,14 +363,14 @@ namespace CLikeCompiler.Libs
             if(sym.IsTerm())
             {
                 List<Term> first = new();
-                AddFirstUnique(ref first, sym);
+                AddSetUnique(ref first, sym);
                 return first;
             } 
             // If sym is a nontermimal
             else if(sym.IsNTerm())
             {
                 NTerm nTerm = (NTerm)sym;
-                if (nTerm.first.Count != 0) { return nTerm.first; }
+                if (nTerm.first.Count != 0) { return new(nTerm.first); }
                 // Find the corresponding Production
                 Prod prod = prods[nTerm.prodIndex];
                 // Check every sub production
@@ -244,24 +379,24 @@ namespace CLikeCompiler.Libs
                     // sym -> epsilon then add epsilon to first
                     if(sub.Count == 0) 
                     { 
-                        AddFirstUnique(ref nTerm.first, Term.blank); 
+                        AddSetUnique(ref nTerm.first, Term.blank); 
                     } 
                     else
                     {
                         // sym -> aA... add terminal a to first
                         if(sub.First().IsTerm()) 
                         { 
-                            AddFirstUnique(ref nTerm.first ,sub.First());
+                            AddSetUnique(ref nTerm.first ,sub.First());
                         } 
                         // sym -> AX... add First of sub production to First of sym
                         else if(sub.First().IsNTerm())
                         {
                             List<Term> subFirst = CalcuFirst(sub, nTerm);
-                            AddFirstUnique(ref nTerm.first, ref subFirst);
+                            AddSetUnique(ref nTerm.first, ref subFirst);
                         }
                     }
                 }
-                return nTerm.first;
+                return new(nTerm.first);
             } 
             // Unkonwn sym type , throw exception
             else
@@ -278,7 +413,7 @@ namespace CLikeCompiler.Libs
             List<Term> first = new();
             if(list.Count == 0) 
             { 
-                AddFirstUnique(ref first , Term.blank); return first; 
+                AddSetUnique(ref first , Term.blank); return first; 
             }
             CheckFirstRecurExcep(list.First(), lhs, true);
 
@@ -290,18 +425,15 @@ namespace CLikeCompiler.Libs
                 // If sub First do not contains epsilon , break and return
                 if(!(subFirst.Contains(Term.blank)))
                 {
-                    first = subFirst;
+                    AddSetUnique(ref first, ref subFirst);
                     break;
                 } 
                 // Else continue to calcu and add next symbol
                 else
                 {
                     // Caution: the the First of last symbol should not remove epsilon
-                    if(sym != list.Last())
-                    {
-                        subFirst.Remove(Term.blank);
-                    }
-                    AddFirstUnique(ref first, ref subFirst);
+                    if(sym != list.Last()) { subFirst.Remove(Term.blank); }
+                    AddSetUnique(ref first, ref subFirst);
                     continue;
                 }
             }
@@ -322,7 +454,7 @@ namespace CLikeCompiler.Libs
 
         private List<Term> CalcuFollow(NTerm sym)
         {
-            if(sym.follow.Count > 0) { return sym.follow; }
+            if(sym.follow.Count > 0) { return new(sym.follow); }
             if(sym == Compiler.parser.GetStartNTerm())
             {
                 sym.follow.Add(Term.end);
@@ -340,24 +472,24 @@ namespace CLikeCompiler.Libs
                             if (seqFirst.Contains(Term.blank))
                             {
                                 seqFirst.Remove(Term.blank);
-                                sym.follow.Union(seqFirst);
+                                AddSetUnique(ref sym.follow , ref seqFirst);
                                 // Prevent right recurrsion
                                 if(sym != prod.GetLhs())
                                 {
                                     List<Term> lhsFirst = CalcuFollow(prod.GetLhs());
-                                    sym.follow.Union(lhsFirst);
+                                    AddSetUnique(ref sym.follow, ref lhsFirst);
                                 }
                             }
                             // First(b) do not contains epsilon, simply add First(b)
                             else
                             {
-                                sym.follow.Union(seqFirst);
+                                AddSetUnique(ref sym.follow, ref seqFirst);
                             }
                         }
                     }
                 }
             }
-            return sym.follow;
+            return new(sym.follow);
         }
 
         private List<Symbols> GetSubProdRemain(List<Symbols> list, int index)
@@ -376,45 +508,81 @@ namespace CLikeCompiler.Libs
 
         private void PrefixFactoring()
         {
-            foreach(Prod prod in prods)
+            for (int i = 0; i < prods.Count; i++)
             {
-                while(HasSharedPrefix(prod, out List<int> subIndexList))
+                Prod prod = prods[i];
+                while (HasSharedPrefix(prod, out List<int> shared))
                 {
                     int shareLen = 0;
-                    if(!SharedPrefixLength(prod, subIndexList, ref shareLen) || shareLen <= 0) { continue; } 
+                    if(!SharedPrefixLength(prod, shared, ref shareLen) || shareLen <= 0) { continue; } 
                     else
                     {
-
+                        FactoringAndNewProd(prod, shared, shareLen);
                     }
                 }
             }
         }
 
-        private bool HasSharedPrefix(Prod prod, out List<int> subIndexList)
+        private void FactoringAndNewProd(Prod prod, List<int> shared, int len)
         {
-            subIndexList = new();
+            if(shared.Count == 0) { return; }
+            NTerm newNTerm = new();
+            newNTerm.SetName(prod.GetLhs().GetName() + "~");
+            newNTerm.prodIndex = prods.Count;
+            nTerms.Add(newNTerm);
+
+            Prod newProd = new Prod();
+            newProd.SetLhs(newNTerm);
+            prods.Add(newProd);
+
+            List<List<Symbols>> rhs = prod.GetRhs();
+
+            // Create new prod and add every remain sequence to new prod
+            foreach (int i in shared)
+            {
+                List<Symbols> remain = rhs[i].GetRange(len, rhs[i].Count - len);
+                newProd.AddSubProd(remain);
+            }
+
+            List<Symbols> former = rhs[shared[0]].GetRange(0, len);
+            former.Add(newNTerm);
+            for(int i = shared.Count - 1; i >= 0; i--)
+            {
+                rhs.RemoveAt(shared[i]);
+            }
+            rhs.Add(former);
+        }
+
+        private bool HasSharedPrefix(Prod prod, out List<int> shared)
+        {
+            shared = new();
+            // Has only one or no subprod , no shared prefix
             if (prod.GetRhs().Count <= 1) {
                 return false; 
             }
             List<List<Symbols>> rhs = prod.GetRhs();
             for (int i = 0; i < rhs.Count; i++)
             {
-                subIndexList.Add(i);
+                // Select one as baseline
+                shared.Add(i);
                for( int j = i + 1; j < rhs.Count; j++) {
+                    // First of Sequence after intersect is no empty set indicates shared prefix 
                     List < Symbols > intersect = new (CalcuFirst(rhs[i], prod.GetLhs()).Intersect(rhs[j]));
                     if (intersect.Count > 1)
                     {
-                        subIndexList.Add(j);
+                        shared.Add(j);
                     }
                 }
-               if(subIndexList.Count > 1) 
+               // Sort the index of shared prefix
+               if(shared.Count > 1) 
                 { 
-                    subIndexList.Sort();
+                    // Send the nearest shared prefix out and wait for next call
+                    shared.Sort();
                     return true; 
                 }
-               else { subIndexList.Clear(); }
+               else { shared.Clear(); }
             }
-            subIndexList.Clear();
+            shared.Clear();
             return false;
         } 
 
@@ -465,12 +633,13 @@ namespace CLikeCompiler.Libs
             return minLen;
         }
 
-        private bool IsSharedPrefixAtIndex(Prod prod, List<int> share, int index)
+        private bool IsSharedPrefixAtIndex(Prod prod, List<int> shared, int index)
         {
             List<Term> intersect = null;
             List<List<Symbols>> rhs = prod.GetRhs();
-            foreach (int i in share)
+            foreach (int i in shared)
             {
+                // Prevent replace recurssion
                 if(rhs[i][index] == prod.GetLhs()) { return false; }
                 List<Term> subFirst = CalcuFirst(rhs[i].GetRange(index, rhs[i].Count - index), prod.GetLhs());
                 if(intersect == null) { intersect = subFirst; }
@@ -488,11 +657,14 @@ namespace CLikeCompiler.Libs
                 if(rhs[i].Count > index && rhs[i][index].IsNTerm())
                 {
                     NTerm replaceSym = (NTerm)rhs[i][index];
-                    if(replaceSym == prod.GetLhs()) { continue; }
+                    // Prevent replace recurssion
+                    if (replaceSym == prod.GetLhs()) { continue; }
                     List<List<Symbols>> replaceRhs = prods[replaceSym.prodIndex].GetRhs();
                     List<Symbols> remain = rhs[i].GetRange(index, rhs[i].Count - index);
-                    foreach(List<Symbols> replaceSeq in replaceRhs)
+
+                    for (int j = 0; j < replaceRhs.Count; j++)
                     {
+                        List<Symbols> replaceSeq = replaceRhs[j];
                         List<Symbols> list = replaceSeq.Concat(remain).ToList();
                         rhs.Add(list);
                     }
@@ -520,6 +692,127 @@ namespace CLikeCompiler.Libs
             }
         }
 
+        private void InitAnalyStack()
+        {
+            stack.Push(Term.end, new DynamicProperty());
+            stack.Push(Compiler.parser.GetStartNTerm(), new DynamicProperty());
+        }
+
+        private bool GetLexInput(out LexUnit input)
+        {
+            return Compiler.lex.GetUnit(out input);
+        }
+
+        private bool IsTopInputMatch(Symbols top, LexUnit input) 
+        {
+            if(top.IsTerm())
+            {
+                return top.GetName() == input.name;
+            }
+            return false;
+        }
+
+        private int IndexOfInputTerm(LexUnit input)
+        {
+            return termsName.IndexOf(input.name);
+        }
+
+        private PredictTableItem FindPredictItem(NTerm nTerm, LexUnit input)
+        {
+            int x = nTerms.IndexOf(nTerm);
+            int y = IndexOfInputTerm(input);
+            if (x < 0 || y < 0) { return new PredictTableItem(); }
+            return table[x, y];
+        }
+
+        private bool GramAnalyTermHandler(LexUnit input, Symbols top, ref bool IsNext)
+        {
+            // Analysis Success.
+            if (top == Term.end && IsTopInputMatch(top, input)) 
+            { 
+                IsNext = true;
+                return true; 
+            }
+            // Terminal match, pop and move to next input
+            else if (IsTopInputMatch(top, input))
+            {
+                stack.Pop();
+                IsNext = true;
+            }
+            else
+            {
+                Compiler.GetInstance().ReportFrontInfo(this,
+                    new CompilerReportArgs(LogItem.MsgType.WARN,
+                    $"非预期的语法，跳过输入符号：{input.cont} ", input.line));
+                IsNext = true;
+            }
+            return false;
+        }
+
+        private void GramAnalyNTermHandler(LexUnit input, Symbols top, DynamicProperty prop ,ref bool IsNext)
+        {
+            PredictTableItem item = FindPredictItem((NTerm)top, input);
+            // Encounter Sync Symbol , handle error before
+            if (item.form == PredictTableItem.Form.SYNCH)
+            {
+                Compiler.GetInstance().ReportFrontInfo(this,
+                    new CompilerReportArgs(LogItem.MsgType.WARN,
+                    $"遭遇同步符号，{input.cont} ", input.line));
+                stack.Pop();
+                IsNext = false;
+            }
+            // Unexpected input terminal , jump over and continue
+            else if (item.form == PredictTableItem.Form.BLANK)
+            {
+                Compiler.GetInstance().ReportFrontInfo(this,
+                    new CompilerReportArgs(LogItem.MsgType.WARN,
+                    $"非预期的语法，跳过输入符号：{input.cont} ", input.line));
+                IsNext = true;
+            }
+            else
+            {
+                // TODO 栈顶为非终结符且预测表项有值 进行推导与语义动作入栈控制
+            }
+        }
+
+        private void GramAnalyActionHandler(Symbols top, ref bool IsNext)
+        {
+            GramAction act = (GramAction)top;
+            act.Activate();
+            stack.Pop();
+            IsNext = false;
+        }
+
+        private bool StartGramAnaly()
+        {
+            InitAnalyStack();
+            bool IsNext = true, IsEnd = false, IsCorrect = false;
+            LexUnit input = new();
+            while (!IsEnd)
+            {
+                stack.Top(out Symbols top, out DynamicProperty prop);
+                if(IsNext) 
+                { 
+                    GetLexInput(out input); 
+                    if(input.name == "end") { IsEnd = true; }
+                }
+
+                if(top.IsTerm()) { IsCorrect = GramAnalyTermHandler(input, top, ref IsNext); } 
+                else if(top.IsNTerm()) { GramAnalyNTermHandler(input, top, prop, ref IsNext); }
+                else if(top.IsAction()) { GramAnalyActionHandler(top, ref IsNext); } 
+                else
+                {
+                    Compiler.GetInstance().ReportBackInfo(this, 
+                        new CompilerReportArgs(LogItem.MsgType.ERROR, "分析栈栈顶异常"));
+                    throw new Exception();
+                }
+            }
+
+            string tips = (IsCorrect ? "分析完成" : "语法分析完成，发现错误");
+            Compiler.GetInstance().ReportBackInfo(this,
+                    new CompilerReportArgs(LogItem.MsgType.INFO, tips));
+            return IsCorrect;
+        }
 
 
     }

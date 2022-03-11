@@ -10,6 +10,7 @@ namespace CLikeCompiler.Libs
     {
         private readonly string gram = "Grammar";
         private string gramSrc;
+        internal bool IsGramReady { private set; get; }
 
         private List<Prod> prods = new List<Prod>();
         private List<Term> terms = new List<Term>();
@@ -26,6 +27,7 @@ namespace CLikeCompiler.Libs
         {
             GetGramSrc();
             RuleParse();
+            IsGramReady = true;
         }
 
         internal void ResetGramParser()
@@ -35,6 +37,7 @@ namespace CLikeCompiler.Libs
             nTerms.Clear();
             prods.Clear();
             startNTerm = null;
+            IsGramReady=false;
         }
 
         internal void AddNewNTerm(NTerm nTerm) 
