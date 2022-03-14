@@ -5,9 +5,22 @@
     xmlns:local="using:CLikeCompiler.Pages"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:data="using:CLikeCompiler.Libs"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     NavigationCacheMode="Required">
+
+    <Page.Resources>
+        <Style x:Key="ScrollViewerStyle" TargetType="ScrollViewer">
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalScrollMode" Value="Enabled"/>
+            <Setter Property="HorizontalScrollBarVisibility" Value="Hidden"/>
+            <Setter Property="VerticalScrollMode" Value="Disabled"/>
+            <Setter Property="VerticalScrollBarVisibility" Value="Disabled"/>
+        </Style>
+
+    </Page.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
@@ -34,7 +47,7 @@
                         <KeyboardAccelerator Modifiers="Control" Key="D" />
                     </AppBarButton.KeyboardAccelerators>
                 </AppBarButton>
-                <AppBarButton Icon="OpenPane" Label="检查面板" Click="ToggleCheckPane">
+                <AppBarButton Icon="ClosePane" Label="检查面板" Click="ToggleCheckPane">
                     <AppBarButton.KeyboardAccelerators>
                         <KeyboardAccelerator Modifiers="Control" Key="Right" />
                     </AppBarButton.KeyboardAccelerators>
@@ -46,7 +59,7 @@
             </CommandBar.Content>
         </CommandBar>
 
-        <SplitView Grid.Row="1" x:Name="splitView" DisplayMode="Inline" IsPaneOpen="True" PanePlacement="Right">
+        <SplitView Grid.Row="1" x:Name="splitView" DisplayMode="Overlay" IsPaneOpen="False" PanePlacement="Right" OpenPaneLength="600">
             <Grid>
                 <TextBox x:Name="codeBox" AutomationProperties.Name="multi-line TextBox" 
                  TextWrapping="Wrap" AcceptsReturn="True" Height="Auto" FontSize="16" FontFamily="Consolas"
@@ -58,20 +71,94 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     
-                    <TextBlock x:Name="paneHeader" Text="检查信息" TextAlignment="Center" 
-                                        FontSize="18" Margin="0,14" />
-                    <ListView x:Name="CheckMsgLink" SelectionMode="Single"  Grid.Row="1">
-                        
+                    <TextBlock x:Name="paneHeader" Text="检查信息" TextAlignment="Center"
+                                        FontSize="18" Margin="0,14, 0, 7" FontWeight="Bold"/>
+
+                    <Grid Grid.Row="1" Margin="14, 7, 14, 14" HorizontalAlignment="Stretch">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1.5*"/>
+                            <ColumnDefinition Width="1.5*"/>
+                            <ColumnDefinition Width="1.5*"/>
+                            <ColumnDefinition Width="2*"/>
+                        </Grid.ColumnDefinitions>
+                        <ScrollViewer Grid.Column="0" Style="{StaticResource ScrollViewerStyle}">
+                            <TextBlock  Text="栈顶符号" Padding="4, 0, 4, 0"></TextBlock>
+                        </ScrollViewer>
+                        <ScrollViewer Grid.Column="1" Style="{StaticResource ScrollViewerStyle}">
+                            <TextBlock  Text="输入类型" Padding="0, 0, 4, 0"></TextBlock>
+                        </ScrollViewer>
+                        <ScrollViewer Grid.Column="2" Style="{StaticResource ScrollViewerStyle}">
+                            <TextBlock  Text="输入内容" Padding="0, 0, 4, 0"></TextBlock>
+                        </ScrollViewer>
+                        <ScrollViewer Grid.Column="3" Style="{StaticResource ScrollViewerStyle}">
+                            <TextBlock  Text="处理操作" Padding="0, 0, 4, 0"></TextBlock>
+                        </ScrollViewer>
+                    </Grid>
+
+                    <ListView x:Name="CheckMsgLink" SelectionMode="Single"  Grid.Row="2" 
+                                    ItemsSource="{x:Bind data:LogUtility.ActionDisplayed}"
+                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                        <ListView.ItemContainerTransitions>
+                            <TransitionCollection>
+                                <RepositionThemeTransition/>
+                                <AddDeleteThemeTransition/>
+                            </TransitionCollection>
+                        </ListView.ItemContainerTransitions>
+                        <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="data:ActionRecord">
+                                <Grid Margin="14, 7, 14, 7" Height="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="1.5*"/>
+                                        <ColumnDefinition Width="1.5*"/>
+                                        <ColumnDefinition Width="1.5*"/>
+                                        <ColumnDefinition Width="2*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ScrollViewer Grid.Column="0" Style="{StaticResource ScrollViewerStyle}">
+                                        <ScrollViewer.Content>
+                                            <TextBlock  Text="{x:Bind GetStackTopStr()}" Padding="4, 0, 4, 0" TextTrimming="Clip"></TextBlock>
+                                        </ScrollViewer.Content>
+                                    </ScrollViewer>
+                                    <ScrollViewer Grid.Column="1" Style="{StaticResource ScrollViewerStyle}">
+                                        <ScrollViewer.Content>
+                                        <TextBlock  Text="{x:Bind GetInputStr()}" Padding="0, 0, 4, 0"></TextBlock>
+                                        </ScrollViewer.Content>
+                                    </ScrollViewer>
+                                    <ScrollViewer Grid.Column="2" Style="{StaticResource ScrollViewerStyle}"> 
+                                        <ScrollViewer.Content>
+                                        <TextBlock  Text="{x:Bind GetInputCont()}" Padding="0, 0, 4, 0"></TextBlock>
+                                        </ScrollViewer.Content>
+                                    </ScrollViewer>
+                                    <ScrollViewer Grid.Column="3" Style="{StaticResource ScrollViewerStyle}">
+                                        <ScrollViewer.Content>
+                                        <TextBlock  Text="{x:Bind GetMsg()}" Padding="0, 0, 4, 0"></TextBlock>
+                                        </ScrollViewer.Content>
+                                    </ScrollViewer>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
                     </ListView>
 
-                    <CommandBar Grid.Row="2" Background="Transparent" IsOpen="False" DefaultLabelPosition="Right">
-                        <AppBarButton Icon="Forward" Label="关闭检查面板" Click="CloseCheckPane">
-                        </AppBarButton>
-                    </CommandBar>
+                    <Grid Grid.Row="3">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1*"/>
+                        </Grid.ColumnDefinitions>
+                        <CommandBar  Background="Transparent" IsOpen="False" DefaultLabelPosition="Right">
+                            <AppBarButton Icon="Clear" Label="清空分析" Click="ClearActionRecordClick">
+                            </AppBarButton>
+                            <AppBarButton Icon="OpenPane"  Label="关闭面板" Click="CloseCheckPane">
+                            </AppBarButton>
+                            <CommandBar.SecondaryCommands>
+                                <AppBarButton Icon="Edit" Label="记录测试" Click="TestActionRecordClick">
+                                </AppBarButton>
+                            </CommandBar.SecondaryCommands>
+                        </CommandBar>
+                    </Grid>
+                    
 
 
                 </Grid>
@@ -79,7 +166,7 @@
 
         </SplitView>
 
-        <InfoBar Grid.Row="2" x:Name="infoBar" IsOpen="True" IsIconVisible="True" Severity="Informational" 
+        <InfoBar Grid.Row="2" x:Name="infoBar" IsOpen="False" IsIconVisible="True" Severity="Informational" 
                  Title="检查结果" Message="">
             <InfoBar.ActionButton >
                 <Button x:Name="CheckPassBtn" Content="跳转" Visibility="Visible" 

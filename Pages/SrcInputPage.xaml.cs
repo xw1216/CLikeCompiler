@@ -1,4 +1,6 @@
-﻿using Microsoft.UI.Xaml;
+﻿using CLikeCompiler;
+using CLikeCompiler.Libs;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Data;
@@ -49,29 +51,59 @@ namespace CLikeCompiler.Pages
             WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
             
             Windows.Storage.StorageFile file = await picker.PickSingleFileAsync();
-            MainWindow.GetInstance().server.SetRootPath(file.Path);
-
+            
             if (file != null)
             {
+                var folder = await file.GetParentAsync();
+                MainWindow.GetInstance().server.SetRootPath(folder.Path);
                 codeBox.Text = await Windows.Storage.FileIO.ReadTextAsync(file);
             } else
             {
-                MainWindow.GetInstance().ShowErrorPage("无法打开代码文件");
+                MainWindow.GetInstance().SetDefaultRootPath();
+                MainWindow.GetInstance().ShowErrorPage("未能打开代码文件");
             }
         }
 
         private void CheckPassJumpBtnClick(object sender, RoutedEventArgs e)
         {
-            infoBar.Visibility = Visibility.Collapsed;
-            MainWindow.GetInstance().PageTagNavigation("MidCodePage");
+            if (infoBar.Severity == InfoBarSeverity.Error)
+            {
+                MainWindow.GetInstance().PageTagNavigation("LogPage");
+            } else
+            {
+                MainWindow.GetInstance().PageTagNavigation("MidCodePage");
+            }
+            infoBar.IsOpen = false;
         }
 
         private void StartCompileClick(object sender, RoutedEventArgs e)
         {
             string src = codeBox.Text;
             CheckCodeEmpty(src);
-            MainWindow.GetInstance().StartCompile(src);
+            if(MainWindow.GetInstance().server.StartCompile(ref src, codeBox))
+            {
+                CompileSuccessHandler();
+                
+            } else
+            {
+                CompileErrorDetectedHandler();
+            }
+        }
 
+        private void CompileErrorDetectedHandler()
+        {
+            infoBar.Severity = InfoBarSeverity.Error;
+            infoBar.Message = "编译发生错误，请前往日志页查看相关信息";
+            splitView.IsPaneOpen = true;
+            splitView.Visibility = Visibility.Visible;
+            infoBar.IsOpen = true;
+        }
+
+        private void CompileSuccessHandler()
+        {
+            infoBar.Severity = InfoBarSeverity.Success;
+            infoBar.Message = "编译成功，可以查看中间代码了";
+            infoBar.IsOpen = true;
         }
 
         private void CheckCodeEmpty(string code)
@@ -82,6 +114,25 @@ namespace CLikeCompiler.Pages
             }
         } 
 
+        public string GetInputSrc()
+        {
+            return codeBox.Text;
+        }
+
+        public void SetInputSrc(string src)
+        {
+            codeBox.Text = src;
+        }
+
+        private void ClearActionRecordClick(object sender, RoutedEventArgs e)
+        {
+            LogUtility.ClearActionRecord();
+        }
+
+        private void TestActionRecordClick(object sender, RoutedEventArgs e)
+        {
+            LogUtility.ActionRecordTest();
+        }
     }
 
     

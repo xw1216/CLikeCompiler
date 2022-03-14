@@ -11,7 +11,7 @@ namespace CLikeCompiler.Libs
         internal enum Type
         {
             ID, KEYWD, OP,
-            INT, DEC, STR
+            INT, DEC, STR, END
         }
 
         internal Type type;
@@ -40,12 +40,22 @@ namespace CLikeCompiler.Libs
             {"[","lsbrc" }, {"]","rsbrc" },{":","colon" }
         };
 
+        private static List<string> constants = new()
+        {
+            "id",
+            "integer",
+            "decimal",
+            "str"
+        };
+
+        private readonly LexUnit endUnit = new();
+
         private readonly char newlineNote = '\n';
         private readonly char whiteNote = ' ';
         private readonly char stringNote = '"';
         private readonly char dotNote = '.';
 
-        private string src;
+        private string src = "";
         private bool isEnd;
 
         private int linePos;
@@ -55,14 +65,24 @@ namespace CLikeCompiler.Libs
         public LexServer()
         {
             ResetLex();
+            endUnit.type = LexUnit.Type.END;
+            endUnit.name = "end";
+            endUnit.cont = "end";
+            endUnit.line = 0;
         }
 
-        private void SetSrc(ref string src)
+        internal void SetSrc(ref string src)
         {
             this.src = src;
+            endUnit.line = src.Count(IsNewLine);
         }
 
-        private void ResetLex()
+        private bool IsNewLine(char c)
+        {
+            return c == newlineNote;
+        }
+
+        public void ResetLex()
         {
             src = "";
             isEnd = false;
@@ -76,10 +96,7 @@ namespace CLikeCompiler.Libs
             unit = new();
             if(isEnd || src.Length == 0) 
             {
-                unit.type = LexUnit.Type.OP;
-                unit.name = "end";
-                unit.cont = "end";
-                unit.line = linePos;
+                unit = endUnit;
                 return false; 
             }
 
@@ -88,15 +105,16 @@ namespace CLikeCompiler.Libs
 
         internal bool IsKeyRecog(string str)
         {
-            return  (keywords.ContainsValue(str) || operators.ContainsValue(str));
+            return  (keywords.ContainsValue(str) || operators.ContainsValue(str) ||
+                constants.Contains(str));
         }
 
         private bool StartLexStep(ref LexUnit unit)
         {
-            if(isEnd) { unit = null;  return false; }
+            if(isEnd) { unit = endUnit;  return false; }
             for(; basePos < src.Length; basePos++, rearPos++)
             {
-                if(src[basePos] == 0) { unit = null;  return false; }
+                if(src[basePos] == 0) { unit = endUnit;  return false; }
                 else if(src[basePos] == newlineNote) { linePos++; continue; }
                 else if(src[basePos] == whiteNote) { continue; }
                 else if(src[basePos] == stringNote) 
@@ -124,7 +142,7 @@ namespace CLikeCompiler.Libs
                     throw new Exception();
                 }
             }
-            unit = null;
+            unit = endUnit;
             isEnd = true;
             return false;
         }
@@ -148,14 +166,13 @@ namespace CLikeCompiler.Libs
                     {
                         unit.name = valueB;
                         unit.cont = inBuilder.ToString();
-                        rearPos += 2;
+                        rearPos += 1;
                         UpdatePosHandlerEnd();
                         return true;
                     }
                 }
                 unit.name = valueA;
                 unit.cont = builder.ToString();
-                rearPos += 1;
                 UpdatePosHandlerEnd();
                 return true;
             }

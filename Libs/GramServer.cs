@@ -10,8 +10,9 @@ namespace CLikeCompiler.Libs
 
     internal class PredictTableItem
     {
-        internal Prod prod;
-        internal Form form;
+        internal Prod prod = null;
+        internal Form form = Form.BLANK;
+        internal int[] pos = new int[2] {0, 0};
 
         internal enum Form
         {
@@ -37,7 +38,7 @@ namespace CLikeCompiler.Libs
         private PredictTableItem[,] table;
         private AnalyStack stack = new();
 
-        bool IsGramReady = false;
+        internal bool IsGramReady { get; private set; } = false;
 
         private readonly string endStr = "end";
 
@@ -51,25 +52,89 @@ namespace CLikeCompiler.Libs
             stack.ResetStack();
         }
 
+        internal ref AnalyStack GetStack()
+        {
+            return ref stack;
+        }
+
+        internal void ResetAnalyStack()
+        {
+            stack.ResetStack();
+        }
+
         internal void BuildGram()
         {
-            GetParserResult();
-            RemoveLeftRecur();
-            PrefixFactoring();
-            BuildPredictTable();
-            IsGramReady = true;
+            if(!IsGramReady)
+            {
+                GetParserResult();
+                RemoveLeftRecur();
+                PrefixFactoring();
+                CalcuAllFirstAndFollow();
+                //PrintGrammar();
+                //PrintFirstAndFollow();
+                BuildPredictTable();
+                IsGramReady = true;
+            }
+        }
+
+        internal void PrintGrammar()
+        {
+            foreach(Prod prod in prods)
+            {
+                System.Diagnostics.Debug.WriteLine(prod.ToString());
+            }
+        }
+
+        internal void PrintFirstAndFollow()
+        {
+            foreach(NTerm nTerm in nTerms)
+            {
+                StringBuilder builder = new();
+                List<Term> first = CalcuFirst(nTerm);
+                SetStrBuilder(first, builder);
+                System.Diagnostics.Debug.WriteLine(nTerm.GetName() + " : First Set");
+                System.Diagnostics.Debug.WriteLine(builder.ToString());
+
+                List<Term> follow = CalcuFollow(nTerm);
+                SetStrBuilder(follow, builder);
+                System.Diagnostics.Debug.WriteLine(nTerm.GetName() + " : Last Set");
+                System.Diagnostics.Debug.WriteLine(builder.ToString());
+            }
+        }
+
+        internal void CalcuAllFirstAndFollow()
+        {
+            foreach (NTerm nTerm in nTerms)
+            {
+                CalcuFirst(nTerm);
+                CalcuFollow(nTerm);
+            }
+        }
+
+        private void SetStrBuilder(List<Term> set, StringBuilder builder)
+        {
+            builder.Clear();
+            builder.Append('\t');
+            for (int i = 0; i < set.Count; i++)
+            {
+                builder.Append(set[i].GetName());
+                if (i < set.Count - 1) { builder.Append(' '); }
+            }
         }
 
         private void GetParserResult()
         {
-            if(Compiler.parser.IsGramReady)
+            if(Compiler.parser.IsBaseGramReady)
             {
                 Compiler.parser.GetSymbolRefs(ref prods, ref terms, ref nTerms);
             }
-            Compiler.GetInstance().ReportBackInfo(this,
+            else
+            {
+                Compiler.GetInstance().ReportBackInfo(this,
                         new CompilerReportArgs(LogItem.MsgType.ERROR,
                         "未建立基础文法"));
-            throw new InvalidOperationException();
+                throw new InvalidOperationException();
+            }
         }
 
         private void RecordTermsName()
@@ -85,18 +150,21 @@ namespace CLikeCompiler.Libs
         {
             RecordTermsName();
             InitTableItem();
-            foreach(Prod prod in prods)
+            for (int i = 0; i < prods.Count; i++)
             {
+                Prod prod = prods[i];
                 List<List<Symbols>> rhs = prod.GetRhs();
-                foreach(List<Symbols> sub in rhs)
+                for (int j = 0; j < rhs.Count; j++)
                 {
+                    List<Symbols> sub = rhs[j];
                     List<Term> first = CalcuFirst(sub, prod.GetLhs());
                     if(first.Contains(Term.blank))
                     {
                         List<Term> follow = CalcuFollow(prod.GetLhs());
                         AddSetUnique(ref first, ref follow);
                     }
-                    InsertTableItem(prod.GetLhs(), sub, first);
+                    first.Remove(Term.blank);
+                    InsertTableItem(prod.GetLhs(), sub, first, i, j);
                 }
                 InsertSynchItem(prod.GetLhs());
             }
@@ -116,21 +184,30 @@ namespace CLikeCompiler.Libs
             }
         }
 
-        private void InsertTableItem(NTerm lhs, List<Symbols> rhs, List<Term> list)
+        private void InsertTableItem(NTerm lhs, List<Symbols> rhs, List<Term> list, int prodIndex, int subIndex)
         {
             Prod prod = new();
             prod.SetLhs(lhs);
             prod.AddSubProd(rhs);
             int x = nTerms.IndexOf(lhs);
 
-            foreach(Term term in list)
+            for (int i = 0; i < list.Count; i++)
             {
+                Term term = list[i];
                 int y = terms.IndexOf(term);
-                if(table[x, y].IsBlank())
+                if (x < 0 || x >= nTerms.Count || y < 0 || y > terms.Count)
                 {
-                    table[x, y].form = PredictTableItem.Form.FILL;
-                    table[x, y].prod = prod;
-                } else
+                    continue;
+                }
+
+                if (table[x, y].IsBlank())
+                {
+                        table[x, y].form = PredictTableItem.Form.FILL;
+                        table[x, y].prod = prod;
+                        table[x, y].pos[0] = prodIndex;
+                        table[x, y].pos[1] = subIndex;
+                }
+                else
                 {
                     Compiler.GetInstance().ReportBackInfo(this,
                                         new CompilerReportArgs(LogItem.MsgType.ERROR,
@@ -170,7 +247,7 @@ namespace CLikeCompiler.Libs
         {
             List<NTerm> findSet = FindUnreachNTerm();
 
-            List<NTerm> unused = new List<NTerm>(nTerms.Except(findSet));
+            List<NTerm> unused = new(nTerms.Except(findSet));
             foreach(NTerm nTerm in unused)
             {
                 DecSymbolRef(nTerm);
@@ -215,7 +292,7 @@ namespace CLikeCompiler.Libs
                 {
                     foreach (Symbols sym in list)
                     {
-                        if (sym.IsNTerm() && findSet.Contains(sym))
+                        if (sym.IsNTerm() && !(findSet.Contains(sym)))
                         {
                             bfsQueue.Enqueue((NTerm)sym);
                         }
@@ -292,7 +369,7 @@ namespace CLikeCompiler.Libs
 
         private void AddSetUnique(ref List<Term> set, Symbols sym)
         {
-            if (sym.IsTerm())
+            if (sym.IsTerm() || sym.IsBlank())
             {
                 set.Add((Term)sym);
                 set.Distinct();
@@ -304,17 +381,24 @@ namespace CLikeCompiler.Libs
             set = set.Union(sub).ToList();
         }
 
+        private NTerm CreateRecurNTerm(string name)
+        {
+            NTerm newNTerm = new();
+            newNTerm.SetName(name);
+            newNTerm.prodIndex = prods.Count;
+            nTerms.Add(newNTerm);
+            IncSymbolRef(newNTerm);
+            return newNTerm;
+        }
+
         private void DirectRecurReplace(Prod src)
         {
             // A -> Aa | b
             FindDirectRecurIndex(ref src, out List<int> recur, out List<int> normal);
             if (recur.Count <= 0) { return; }
-
+            
             // Create A'
-            NTerm newNTerm = new NTerm();
-            newNTerm.SetName(src.GetLhs() + "\'");
-            newNTerm.prodIndex = prods.Count;
-            nTerms.Add(newNTerm);
+            NTerm newNTerm = CreateRecurNTerm(src.GetLhs().GetName() + "\'");
             // Add A -> bA'
             foreach (int i in normal)
             {
@@ -323,9 +407,9 @@ namespace CLikeCompiler.Libs
             }
 
             // Create A' Prod
-            Prod newProd = new Prod();
+            Prod newProd = new();
             newProd.SetLhs(newNTerm);
-            Compiler.parser.AddNewNTerm(newNTerm);
+            
             // Add epsilon
             newProd.NewSubProd();
             // Remove A -> Aa , Add A' -> aA'
@@ -336,7 +420,10 @@ namespace CLikeCompiler.Libs
                 {
                     List<Symbols> tmp = new(src.GetRhs()[i]);
                     src.GetRhs().RemoveAt(i);
+                    i--;
+                    IncSymbolRef(newNTerm);
                     tmp.Add(newNTerm);
+                    DecSymbolRef(tmp[0]);
                     tmp.RemoveAt(0);
                     newProd.AddSubProd(tmp);
                 }
@@ -370,7 +457,7 @@ namespace CLikeCompiler.Libs
             else if(sym.IsNTerm())
             {
                 NTerm nTerm = (NTerm)sym;
-                if (nTerm.first.Count != 0) { return new(nTerm.first); }
+                if (nTerm.first.Count > 0) { return new(nTerm.first); }
                 // Find the corresponding Production
                 Prod prod = prods[nTerm.prodIndex];
                 // Check every sub production
@@ -413,14 +500,14 @@ namespace CLikeCompiler.Libs
             List<Term> first = new();
             if(list.Count == 0) 
             { 
-                AddSetUnique(ref first , Term.blank); return first; 
+                AddSetUnique(ref first , Term.blank); 
+                return first; 
             }
-            CheckFirstRecurExcep(list.First(), lhs, true);
 
             foreach(Symbols sym in list)
             {
-                CheckFirstRecurExcep(sym, lhs, false);
                 // Check First of single symbol 
+                // No left recurrsion so no infinity loop
                 List<Term> subFirst = CalcuFirst(sym);
                 // If sub First do not contains epsilon , break and return
                 if(!(subFirst.Contains(Term.blank)))
@@ -533,6 +620,7 @@ namespace CLikeCompiler.Libs
 
             Prod newProd = new Prod();
             newProd.SetLhs(newNTerm);
+            IncSymbolRef(newNTerm);
             prods.Add(newProd);
 
             List<List<Symbols>> rhs = prod.GetRhs();
@@ -567,8 +655,9 @@ namespace CLikeCompiler.Libs
                 shared.Add(i);
                for( int j = i + 1; j < rhs.Count; j++) {
                     // First of Sequence after intersect is no empty set indicates shared prefix 
-                    List < Symbols > intersect = new (CalcuFirst(rhs[i], prod.GetLhs()).Intersect(rhs[j]));
-                    if (intersect.Count > 1)
+                    List < Symbols > intersect = new (
+                        CalcuFirst(rhs[i], prod.GetLhs()).Intersect(CalcuFirst(rhs[j], prod.GetLhs())));
+                    if (intersect.Count >= 1)
                     {
                         shared.Add(j);
                     }
@@ -601,7 +690,7 @@ namespace CLikeCompiler.Libs
             {
                 Symbols sym = rhs[shared[0]][len];
                 // Check if all subProd same at index 'len'
-                for (int i = 0; i < shared.Count; i++)
+                for (int i = 1; i < shared.Count; i++)
                 {
                     if(rhs[shared[i]][len] != sym) {
                         // Check is there any indirect equal
@@ -615,7 +704,6 @@ namespace CLikeCompiler.Libs
                         else { return true; }
                     }
                 }
-                len++;
             }
             Compiler.GetInstance().ReportBackInfo(this, new CompilerReportArgs(LogItem.MsgType.ERROR,
                                               "公因子长度计算错误：" + prod.GetLhs().GetName()));
@@ -628,7 +716,7 @@ namespace CLikeCompiler.Libs
             int minLen = int.MaxValue;
             foreach (int i in shared)
             {
-                if (rhs.Count < minLen) { minLen = rhs.Count; }
+                if (rhs[i].Count < minLen) { minLen = rhs[i].Count; }
             }
             return minLen;
         }
@@ -643,7 +731,7 @@ namespace CLikeCompiler.Libs
                 if(rhs[i][index] == prod.GetLhs()) { return false; }
                 List<Term> subFirst = CalcuFirst(rhs[i].GetRange(index, rhs[i].Count - index), prod.GetLhs());
                 if(intersect == null) { intersect = subFirst; }
-                else { intersect.Intersect(subFirst); }
+                else { intersect = intersect.Intersect(subFirst).ToList(); }
             }
             if (intersect == null || intersect.Count <= 0) { return false; }
             else { return true; }
@@ -652,16 +740,20 @@ namespace CLikeCompiler.Libs
         private void ReplacePrefix(Prod prod, List<int> shared, int index)
         {
             List<List<Symbols>> rhs = prod.GetRhs();
+            List<int> changed = new();
             foreach (int i in shared)
             {
                 if(rhs[i].Count > index && rhs[i][index].IsNTerm())
                 {
+                    changed.Add(i);
                     NTerm replaceSym = (NTerm)rhs[i][index];
+
                     // Prevent replace recurssion
                     if (replaceSym == prod.GetLhs()) { continue; }
                     List<List<Symbols>> replaceRhs = prods[replaceSym.prodIndex].GetRhs();
-                    List<Symbols> remain = rhs[i].GetRange(index, rhs[i].Count - index);
+                    List<Symbols> remain = rhs[i].GetRange(index + 1, rhs[i].Count - index - 1);
 
+                    // Concat two seq
                     for (int j = 0; j < replaceRhs.Count; j++)
                     {
                         List<Symbols> replaceSeq = replaceRhs[j];
@@ -670,9 +762,9 @@ namespace CLikeCompiler.Libs
                     }
                 }
             }
-            for(int i = shared.Count - 1; i >= 0; i--)
+            for(int i = changed.Count - 1; i >= 0; i--)
             {
-                rhs.RemoveAt(i);
+                rhs.RemoveAt(changed[i]);
             }
             RemoveDupSubProd(prod);
         }
@@ -725,68 +817,85 @@ namespace CLikeCompiler.Libs
             return table[x, y];
         }
 
-        private bool GramAnalyTermHandler(LexUnit input, Symbols top, ref bool IsNext)
+        private bool GramAnalyTermHandler(LexUnit input, Symbols top, ref bool IsNext, ref bool IsEnd)
         {
             // Analysis Success.
             if (top == Term.end && IsTopInputMatch(top, input)) 
-            { 
-                IsNext = true;
+            {
+                LogUtility.NewActionRecord(top, input, "分析完成");
+                IsNext = false;
+                IsEnd = true;
                 return true; 
             }
             // Terminal match, pop and move to next input
             else if (IsTopInputMatch(top, input))
             {
+                LogUtility.NewActionRecord(top, input, "匹配弹出，读入新符");
                 stack.Pop();
                 IsNext = true;
+                return true;
             }
             else
             {
+                LogUtility.NewActionRecord(top, input, "无法匹配，跳过输入");
                 Compiler.GetInstance().ReportFrontInfo(this,
                     new CompilerReportArgs(LogItem.MsgType.WARN,
                     $"非预期的语法，跳过输入符号：{input.cont} ", input.line));
                 IsNext = true;
+                return false;
             }
-            return false;
+            
         }
 
-        private void GramAnalyNTermHandler(LexUnit input, Symbols top, DynamicProperty prop ,ref bool IsNext)
+        private bool GramAnalyNTermHandler(LexUnit input, Symbols top, DynamicProperty prop ,ref bool IsNext)
         {
             PredictTableItem item = FindPredictItem((NTerm)top, input);
             // Encounter Sync Symbol , handle error before
             if (item.form == PredictTableItem.Form.SYNCH)
             {
+                LogUtility.NewActionRecord(top, input, "同步符号，弹出栈顶");
                 Compiler.GetInstance().ReportFrontInfo(this,
                     new CompilerReportArgs(LogItem.MsgType.WARN,
                     $"遭遇同步符号，{input.cont} ", input.line));
                 stack.Pop();
                 IsNext = false;
+                return false;
             }
             // Unexpected input terminal , jump over and continue
             else if (item.form == PredictTableItem.Form.BLANK)
             {
+                LogUtility.NewActionRecord(top, input, "无法匹配，跳过输入");
                 Compiler.GetInstance().ReportFrontInfo(this,
                     new CompilerReportArgs(LogItem.MsgType.WARN,
                     $"非预期的语法，跳过输入符号：{input.cont} ", input.line));
                 IsNext = true;
+                return false;
             }
             else
             {
                 // TODO 栈顶为非终结符且预测表项有值 进行推导与语义动作入栈控制
+                IsNext = false;
+                LogUtility.NewActionRecord(top, input, "非终结符推导，右部倒序入栈");
+                Compiler.midGen.DeriveHandler(item, input);
+                return true;
             }
         }
 
-        private void GramAnalyActionHandler(Symbols top, ref bool IsNext)
+        private bool GramAnalyActionHandler(LexUnit input, Symbols top, ref bool IsNext)
         {
+            LogUtility.NewActionRecord(top, input, "执行语义动作");
             GramAction act = (GramAction)top;
-            act.Activate();
+            bool IsActionCorrect = act.Activate();
+
             stack.Pop();
             IsNext = false;
+            return IsActionCorrect;
         }
 
-        private bool StartGramAnaly()
+        internal bool StartGramAnaly()
         {
             InitAnalyStack();
-            bool IsNext = true, IsEnd = false, IsCorrect = false;
+            bool IsNext = true, IsEnd = false, IsCorrect = true;
             LexUnit input = new();
             while (!IsEnd)
             {
@@ -794,12 +903,11 @@ namespace CLikeCompiler.Libs
                 if(IsNext) 
                 { 
                     GetLexInput(out input); 
-                    if(input.name == "end") { IsEnd = true; }
                 }
 
-                if(top.IsTerm()) { IsCorrect = GramAnalyTermHandler(input, top, ref IsNext); } 
-                else if(top.IsNTerm()) { GramAnalyNTermHandler(input, top, prop, ref IsNext); }
-                else if(top.IsAction()) { GramAnalyActionHandler(top, ref IsNext); } 
+                if(top.IsTerm()) { IsCorrect &= GramAnalyTermHandler(input, top, ref IsNext, ref IsEnd); } 
+                else if(top.IsNTerm()) { IsCorrect &= GramAnalyNTermHandler(input, top, prop, ref IsNext); }
+                else if(top.IsAction()) { IsCorrect &= GramAnalyActionHandler(input, top, ref IsNext); } 
                 else
                 {
                     Compiler.GetInstance().ReportBackInfo(this, 
@@ -807,10 +915,6 @@ namespace CLikeCompiler.Libs
                     throw new Exception();
                 }
             }
-
-            string tips = (IsCorrect ? "分析完成" : "语法分析完成，发现错误");
-            Compiler.GetInstance().ReportBackInfo(this,
-                    new CompilerReportArgs(LogItem.MsgType.INFO, tips));
             return IsCorrect;
         }
 

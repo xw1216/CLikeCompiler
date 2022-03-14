@@ -9,12 +9,12 @@ namespace CLikeCompiler.Libs
 
     internal class MacroTable
     {
-        private List<string> globalMacros = new();
+        private static List<string> globalMacros = new();
         private Dictionary<string, string> replaceMacros = new();
 
         public void AddDefineValue(string key, string value)
         {
-            replaceMacros[key] = value;
+            replaceMacros.Add(key, value);
             if(!globalMacros.Contains(key))
             {
                 globalMacros.Add(key);
@@ -24,6 +24,11 @@ namespace CLikeCompiler.Libs
         public ref Dictionary<string, string> GetLocalMacros()
         {
             return ref replaceMacros;
+        }
+
+        public void ClearLocalMacros()
+        {
+            replaceMacros.Clear();
         }
 
         public void AddDefineInclude(string key)

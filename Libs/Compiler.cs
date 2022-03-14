@@ -1,10 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.Resources;
 
+using CLikeCompiler.Pages;
+using Microsoft.UI.Xaml.Controls;
+
+[assembly: InternalsVisibleTo("CLikeCompilerTests")]
 namespace CLikeCompiler.Libs
 {
     public class CompilerReportArgs : EventArgs
@@ -34,10 +39,12 @@ namespace CLikeCompiler.Libs
         internal static OptiServer opti;
         internal static TargGenServer targGen;
         internal static ResourceLoader resFile;
+        internal static MacroTable macroTable;
 
         private Compiler()
         {
             RegisterComponents();
+            Term.Init();
         }
 
         private void RegisterComponents()
@@ -46,10 +53,21 @@ namespace CLikeCompiler.Libs
             lex = new LexServer();
             parser = new GramParser();
             gram = new GramServer();
-            midGen = new MidGenServer();
+            midGen = new MidGenServer(gram);
             opti = new OptiServer();
             targGen = new TargGenServer();
             resFile = new ResourceLoader("Res");
+            macroTable = new MacroTable();
+        }
+
+        public void ResetCompiler()
+        {
+            prepro.ResetPrePro();
+            lex.ResetLex();
+            parser.ResetGramParser();
+            gram.ResetGramServer();
+
+            MainWindow.GetInstance().SetDefaultRootPath();
         }
 
         public static ref Compiler GetInstance()
@@ -57,17 +75,38 @@ namespace CLikeCompiler.Libs
             return ref compiler;
         }
 
-        internal bool StartPrePro(ref string input, ref string output, ref MacroTable table)
+        public bool StartCompile(ref string src, TextBox box)
+        {
+            prepro.ResetPrePro();
+            lex.ResetLex();
+            gram.ResetAnalyStack();
+            string srcAfter = "";
+            // First make sure base grammar productions is ready.
+            if (!StartGramParse()) { return false; }
+            // Second pre-process the src, and feedback to src input page
+            if (!StartPrePro(ref src, ref srcAfter)) { return false; }
+            lex.SetSrc(ref srcAfter);
+            // Third grammar analysis start, get lexical unit from lex
+            if(!StartGramServer()) { return false; }
+
+            return true;
+        }
+
+        internal bool StartPrePro(ref string input, ref string output)
         {
             try
             {
+                prepro.SetMacroTable(ref macroTable);
                 prepro.StartPrePro(ref input);
                 output = prepro.GetSrc();
-                prepro.GetMacroTable(ref table);
-            } catch (Exception)
+                CompilerReportArgs argsSuc = new(LogItem.MsgType.INFO, "预处理完成");
+                ReportBackInfo(this, argsSuc);
+            }
+            catch (Exception)
             {
-                CompilerReportArgs args = new(LogItem.MsgType.ERROR, "停止预处理");
-                ReportBackInfo(this, args);
+                CompilerReportArgs argsFail = new(LogItem.MsgType.ERROR, "停止预处理");
+                ReportBackInfo(this, argsFail);
+                prepro.ResetPrePro();
                 return false;
             }
             return true;
@@ -78,13 +117,50 @@ namespace CLikeCompiler.Libs
             try
             {
                 parser.StartGramParse();
+                CompilerReportArgs args = new(LogItem.MsgType.INFO, "基础文法解析完成");
+                ReportBackInfo(this, args);
             } catch (Exception)
             {
                 CompilerReportArgs args = new(LogItem.MsgType.ERROR, "停止文法解析");
                 ReportBackInfo(this, args);
+                parser.ResetGramParser();
                 return false;
             }
             return true;
+        }
+
+        public bool StartGramServer()
+        {
+            try 
+            { 
+                gram.BuildGram();
+                CompilerReportArgs args = new(LogItem.MsgType.INFO, "基础文法解析完成");
+                ReportBackInfo(this, args);
+            }
+            catch (Exception)
+            {
+                CompilerReportArgs args = new(LogItem.MsgType.ERROR, "语法模板建立失败，请检查");
+                ReportBackInfo(this, args);
+                lex.ResetLex();
+                gram.ResetGramServer();
+                return false;
+            }
+            bool IsGramCorrect = false;
+            try { 
+                IsGramCorrect = gram.StartGramAnaly();
+                string tips = (IsGramCorrect ? "分析完成" : "语法分析完成，发现错误");
+                Compiler.GetInstance().ReportBackInfo(this,
+                        new CompilerReportArgs(LogItem.MsgType.INFO, tips));
+            }
+            catch (Exception)
+            {
+                CompilerReportArgs args = new(LogItem.MsgType.ERROR, "内部错误，停止语法检查");
+                ReportBackInfo(this, args);
+                lex.ResetLex();
+                gram.ResetAnalyStack();
+                return false;
+            }
+            return IsGramCorrect;
         }
 
         internal void ReportFrontInfo(object sender, CompilerReportArgs e)
@@ -98,7 +174,8 @@ namespace CLikeCompiler.Libs
         internal void ReportBackInfo(object sender, CompilerReportArgs e)
         {
             string partName = GetComponentName(sender);
-            string msg = partName + "组件内部问题：" +  e.msg;
+            string tipMsg = (e.msgType == LogItem.MsgType.INFO) ?  "：" : "内部问题：";
+            string msg = partName + tipMsg +  e.msg;
             LogUtility.GetInstance().NewLogRecord(msg, e.msgType);
         }
 
@@ -110,10 +187,8 @@ namespace CLikeCompiler.Libs
             return partName;
         }
 
-        public void SetRootPath(string path)
+        internal void SetRootPath(string path)
         {
-            int startPos = path.LastIndexOf(@"\");
-            path.Remove(startPos);
             PreproServer.SetRootPath(ref path);
         }
 

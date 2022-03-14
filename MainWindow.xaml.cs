@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 
 using CLikeCompiler.Libs;
 using CLikeCompiler.Pages;
+using Windows.Storage;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -40,6 +41,7 @@ namespace CLikeCompiler
             SetWindowTitleBar();
             RegisterAllComponents();
             ShowWelcomePage();
+            SetDefaultRootPath();
         }
 
         public static ref MainWindow GetInstance()
@@ -78,6 +80,12 @@ namespace CLikeCompiler
         private  void ShowWelcomePage()
         {
             SideNav.SelectedItem = welcomViewItem;
+        }
+
+        internal void SetDefaultRootPath()
+        {
+            var folder = Windows.Storage.ApplicationData.Current.LocalFolder;
+            MainWindow.GetInstance().server.SetRootPath(folder.Path);
         }
 
         private void FrameNavigation(NavigationViewItem pageSelected)
@@ -129,18 +137,12 @@ namespace CLikeCompiler
             };
 
             dialog.XamlRoot = SideNav.XamlRoot;
-            await dialog.ShowAsync();
-        }
-
-        public void StartCompile(string src)
-        {
-            try {
-
-            }
-            catch (Exception ex) {
-                
-            } finally  {
-
+            try
+            {
+                await dialog.ShowAsync();
+            } catch (Exception)
+            {
+                return;
             }
         }
 

@@ -6,10 +6,40 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using Windows.Storage;
-using System.Runtime.CompilerServices;
 
 namespace CLikeCompiler.Libs
 { 
+    public class ActionRecord
+    {
+        internal Symbols stackTop;
+        internal LexUnit inputFirst;
+        internal string msg;
+
+        public string GetStackTopStr()
+        {
+            if (stackTop == null) { return ""; }
+            return stackTop.GetName();
+        }
+
+        public string GetInputStr()
+        {
+            if(inputFirst == null) { return ""; }
+            return inputFirst.name;
+        }
+
+        public string GetInputCont()
+        {
+            if(inputFirst == null) { return ""; }
+            return inputFirst.cont;
+        }
+
+        public string GetMsg()
+        {
+            if(msg == null) { return ""; }
+            return msg;
+        }
+
+    }
     public class LogItem
     {
         public enum MsgType
@@ -51,8 +81,8 @@ namespace CLikeCompiler.Libs
             // {x:Bind GetServerityFont()}
             return Serverity switch
             {
-                MsgType.INFO => "\uF142",
-                MsgType.WARN => "\uF13C",
+                MsgType.INFO => "\uF13C",
+                MsgType.WARN => "\uF142",
                 MsgType.ERROR => "\uF13D",
                 _ => "\uF13D;",
             };
@@ -76,13 +106,43 @@ namespace CLikeCompiler.Libs
 
         private SemaphoreSlim semaphore;
         private StorageFile logFile;
-        private readonly int logDispCnt = 30;
+        private static readonly int recDispCnt = 15;
+        private static readonly int logDispCnt = 30;
         private static ObservableCollection<LogItem> logDisplayed = new();
         public static ObservableCollection<LogItem> LogDisplayed { get { return logDisplayed; } }
+
+        private static ObservableCollection<ActionRecord> actionDisplayed = new();
+        public static ObservableCollection<ActionRecord> ActionDisplayed { get { return actionDisplayed; } }
 
         public LogUtility()
         {
             semaphore = new SemaphoreSlim(1, 1);
+        }
+
+        public static void ActionRecordTest()
+        {
+            LexUnit unit = new();
+            unit.name = "Test";
+            unit.cont = "Test";
+            NewActionRecord(Term.end, unit, "Action Record Test ................................");
+        }
+
+        internal static void NewActionRecord(Symbols sym, LexUnit unit, string msg)
+        {
+            ActionRecord action = new();
+            action.stackTop = sym;
+            action.inputFirst = unit;
+            action.msg = msg;
+            if(actionDisplayed.Count > recDispCnt)
+            {
+                actionDisplayed.RemoveAt(actionDisplayed.Count - 1);
+            }
+            actionDisplayed.Add(action);
+        }
+
+        public static void ClearActionRecord()
+        {
+            actionDisplayed.Clear();
         }
 
         public void Initialize()

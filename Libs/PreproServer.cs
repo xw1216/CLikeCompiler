@@ -10,10 +10,10 @@ namespace CLikeCompiler.Libs
     {
         private delegate void MacroHandler(string strArg);
         private event MacroHandler MacroEvent;
-        private static MacroTable macroTable;
+        private MacroTable macroTable;
         private static string rootPath;
 
-        private StringBuilder src;
+        private StringBuilder src = new();
         private int basePos;
         private int rearPos;
         private int ifdefCnt;
@@ -28,29 +28,30 @@ namespace CLikeCompiler.Libs
 
         public PreproServer()
         {
-            ResetServer();
+            ResetPrePro();
         }
 
-        private void ResetServer()
+        public void ResetPrePro()
         {
-            src.Clear();
+            if(src != null) src.Clear();
             basePos = 0;
             rearPos = 1;
             ifdefCnt = 0;
             linePos = 1;
+            ResetMacroTable();
         }
 
-        public void ResetMacroTable()
+        private void ResetMacroTable()
         {
-            macroTable.ResetMacroTable();
+            if(macroTable != null)
+                macroTable.ResetMacroTable();
         }
 
         public void SetSrc(ref string src)
         {
-            src.Replace('\t', ' ');
-            src.Replace("\r", "");
-            src.Trim();
+            src = src.Replace("\r\n", "\n").Replace("\r", "\n").Replace('\t', ' ').Trim();
             this.src = new(src);
+            
         }
 
         public string GetSrc()
@@ -74,9 +75,9 @@ namespace CLikeCompiler.Libs
             MacroRecognize();
         }
 
-        public void GetMacroTable(ref MacroTable table)
+        public void SetMacroTable(ref MacroTable table)
         {
-            table = macroTable;
+            macroTable = table;
         }
 
         private void SendFrontMessage(string msg, LogItem.MsgType type)
@@ -97,7 +98,7 @@ namespace CLikeCompiler.Libs
 
             while(macroPos != invalid)
             {
-                StringBuilder builder = GetSubString(macroPos);
+                StringBuilder builder = GetSubString(macroPos + 1);
                 switch (builder.ToString())
                 {
                     case "ifndef":
@@ -114,6 +115,8 @@ namespace CLikeCompiler.Libs
                 }
                 macroPos = MacroNoteIndex();
             }
+            CheckIfDismatch();
+            DefineReplacement();
         }
 
         private void DefineHandler()
@@ -137,6 +140,16 @@ namespace CLikeCompiler.Libs
             // The Define Replacement has been delayed to lexServer process.
         }
 
+        private void DefineReplacement()
+        {
+            Dictionary<string, string> macro = macroTable.GetLocalMacros();
+            foreach(string key in macro.Keys)
+            {
+                src = src.Replace(key, macro[key]);
+            }
+            macroTable.ClearLocalMacros();
+        }
+
         private void IncludeHandler()
         {
             StringBuilder filename = GetSubString(rearPos);
@@ -157,7 +170,7 @@ namespace CLikeCompiler.Libs
         {
             if(filename.Length == 0) { return null; }
             string filePath = rootPath + @"\" + filename + ".txt";
-            SendFrontMessage("处理包含子文件中：" + filename, LogItem.MsgType.INFO);
+            SendFrontMessage("处理子文件：" + filename, LogItem.MsgType.INFO);
 
             string text;
             try
@@ -172,12 +185,14 @@ namespace CLikeCompiler.Libs
             ProcFileRecurs(ref text);
 
             SendFrontMessage("离开子文件：" + filename, LogItem.MsgType.INFO);
-            return new StringBuilder("\n" + text + "\n");
+            return new StringBuilder(text);
         }
 
         private void ProcFileRecurs(ref string src)
         {
             PreproServer prepro = new();
+            MacroTable macroTable = new MacroTable();
+            prepro.SetMacroTable(ref macroTable);
             prepro.StartPrePro(ref src);
             src = prepro.GetSrc();
         }
@@ -185,7 +200,7 @@ namespace CLikeCompiler.Libs
         private void EndIfHandler()
         {
             ifdefCnt--;
-            CheckIfDismatch();
+            RemoveMacro();
         }
 
         private void MacroArgLack()
@@ -196,9 +211,9 @@ namespace CLikeCompiler.Libs
 
         private void CheckIfDismatch()
         {
-            if (ifdefCnt <= 0)
+            if (ifdefCnt < 0 || ifdefCnt > 0)
             {
-                SendFrontMessage("未能配对的 if 宏定义", LogItem.MsgType.ERROR);
+                SendFrontMessage("未能配对 if 宏定义", LogItem.MsgType.ERROR);
                 throw new Exception();
             }
         }
@@ -228,8 +243,7 @@ namespace CLikeCompiler.Libs
                 macro = GetSubString(rearPos);
                 if(macro.ToString() == "ifndef") { ifdefCnt++; }
                 else if(macro.ToString() == "endif") { ifdefCnt--; }
-            } while (ifdefCnt <=0 || nextMacroPos != invalid);
-            CheckIfDismatch();
+            } while (ifdefCnt > 0 || nextMacroPos != invalid);
             SetPosToNextLine();
             int end = basePos;
             RemoveSrc(start, end);
@@ -258,9 +272,8 @@ namespace CLikeCompiler.Libs
             {
                 basePos++;
             }
-            if (basePos == src.Length)
+            if (basePos >= src.Length)
             {
-                basePos = invalid;
                 rearPos = invalid;
             } else
             {
@@ -285,20 +298,11 @@ namespace CLikeCompiler.Libs
         private StringBuilder GetSubString(int pos)
         {
             StringBuilder str = new();
-            bool haveValidChar = false;
-            while (pos < src.Length && pos >= 0 
-                && !(IsWhiteSpace(src[pos]) || haveValidChar))
+            while(src[pos] == ' ' && pos < src.Length) { pos++; }
+
+            while (pos < src.Length && pos >= 0)
             {
-                if (IsWhiteSpace(src[pos]) && !haveValidChar)
-                {
-                    if(IsNewLine(src[pos]))
-                    {
-                        break;
-                    }
-                    haveValidChar = true;
-                    pos++;
-                    continue;
-                }
+                if(IsWhiteSpace(src[pos])) { break; }
                 str.Append(src[pos]);
                 pos++;
             }

@@ -41,6 +41,24 @@ namespace CLikeCompiler.Libs
         {
             rhs.Add(sub);
         }
-        
+        public override string ToString()
+        {
+            StringBuilder builder = new();
+            builder.Append(lhs.GetName() + " -> ");
+            for (int i = 0; i < rhs.Count; i++)
+            {
+                List<Symbols> list = rhs[i];
+                if (list.Count == 0) { builder.Append("blank ");}
+                for(int j = 0; j < list.Count; j++)
+                {
+                    builder.Append(list[j].GetName() + " ");
+                }
+                if(i < rhs.Count - 1)
+                {
+                    builder.Append("| ");
+                }
+            }
+            return builder.ToString();
+        }
     }
 }

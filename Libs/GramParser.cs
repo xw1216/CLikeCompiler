@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 
 namespace CLikeCompiler.Libs
 {
-    internal class GramParser
+    public class GramParser
     {
         private readonly string gram = "Grammar";
         private string gramSrc;
-        internal bool IsGramReady { private set; get; }
+        internal bool IsBaseGramReady { private set; get; } = false;
 
         private List<Prod> prods = new List<Prod>();
         private List<Term> terms = new List<Term>();
@@ -18,16 +18,20 @@ namespace CLikeCompiler.Libs
 
         private NTerm startNTerm;
 
-        internal GramParser()
+        public GramParser()
         {
             ResetGramParser();
         }
 
-        internal void StartGramParse()
+        public void StartGramParse()
         {
-            GetGramSrc();
-            RuleParse();
-            IsGramReady = true;
+            if(!IsBaseGramReady)
+            {
+                GetGramSrc();
+                RuleParse();
+                CheckUndefinedNTerm();
+                IsBaseGramReady = true;
+            }
         }
 
         internal void ResetGramParser()
@@ -37,7 +41,7 @@ namespace CLikeCompiler.Libs
             nTerms.Clear();
             prods.Clear();
             startNTerm = null;
-            IsGramReady=false;
+            IsBaseGramReady=false;
         }
 
         internal void AddNewNTerm(NTerm nTerm) 
@@ -76,12 +80,26 @@ namespace CLikeCompiler.Libs
             }
         }
 
+        private void CheckUndefinedNTerm()
+        {
+            foreach(Prod prod in prods)
+            {
+                if(prod.GetLhs().prodIndex < 0)
+                {
+                    Compiler.GetInstance().ReportBackInfo(this,
+                    new CompilerReportArgs(LogItem.MsgType.ERROR, "存在未定义的非终结符：" + prod.GetLhs().GetName()));
+                    throw new Exception();
+                }
+            }
+        }
+
         private void GenProd(ref List<string> side)
         {
             if(side.Count != 2)
             {
                 Compiler.GetInstance().ReportBackInfo(this, 
                     new CompilerReportArgs(LogItem.MsgType.ERROR, "文法格式错误" + side.ToString()));
+                throw new Exception();
             }
             Prod prod = new Prod();
             Lhshandler(ref prod, side.First());
@@ -99,6 +117,7 @@ namespace CLikeCompiler.Libs
         private void RhsHandler(ref Prod prod, string str)
         {
             StringBuilder builder = new StringBuilder();
+            prod.NewSubProd();
             
             for(int pos = 0; pos < str.Length; pos++)
             {

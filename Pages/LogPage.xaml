@@ -60,7 +60,7 @@
                             <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="{x:Bind GetServerityFont()}" />
                         </Grid>
                         <StackPanel Margin="14, 0, 0, 0">
-                            <TextBlock Text="{x:Bind Content}" FontWeight="Bold" Margin="8,0,0,0" Padding="0, 4, 0, 4" 
+                            <TextBlock Text="{x:Bind Content}" Margin="8,0,0,0" Padding="0, 4, 0, 4" 
                                        FontSize="18" TextWrapping="Wrap"/>
                             <TextBlock Text="{x:Bind GetTipStr()}" Margin="8,0,0,0" Padding="0, 0, 0, 4" FontSize="12"/>
                         </StackPanel>

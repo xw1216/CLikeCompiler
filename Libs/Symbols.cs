@@ -26,7 +26,7 @@ namespace CLikeCompiler.Libs
             refCnt = 0;
         }
 
-        internal abstract Form GetForm();
+        internal Form GetForm() { return form; }
         protected void SetForm(Form form) { this.form = form; }
         internal string GetName() { return name; }
         internal void SetName(string name) { this.name = name; }
@@ -40,11 +40,17 @@ namespace CLikeCompiler.Libs
         internal bool IsTerm() { return form == Form.TERM; }
         internal bool IsNTerm() { return form == Form.NONTERM; }
         internal bool IsAction() { return form == Form.ACTION; }
+        internal bool IsBlank() { return form == Form.BLANK; }
 
     }
 
     internal class Term : Symbols
     {
+        internal Term()
+        {
+            this.SetForm(Form.TERM);
+        }
+
         internal static Term blank = new Term();
         internal static Term end = new Term();
 
@@ -52,12 +58,7 @@ namespace CLikeCompiler.Libs
         {
             blank.SetName("blank");
             end.SetName("end");
-            end.SetForm(Form.TERM);
-        }
-
-        internal override Form GetForm()
-        {
-            return Form.TERM;
+            blank.SetForm(Form.BLANK);
         }
 
         internal bool CanTermRecog(ref string str)
@@ -68,7 +69,12 @@ namespace CLikeCompiler.Libs
 
     internal class NTerm : Symbols
     {
-        internal int prodIndex { get; set; }
+        internal NTerm()
+        {
+            this.SetForm(Form.NONTERM);
+        }
+
+        internal int prodIndex { get; set; } = -1;
 
         internal List<Term> first = new();
         internal List<Term> follow = new();
@@ -94,23 +100,18 @@ namespace CLikeCompiler.Libs
             return first.Contains(term);
         }
 
-        internal override Form GetForm()
-        {
-            return Form.NONTERM;
-        }
-
     }
 
     internal class GramAction : Symbols
     {
-        internal override Form GetForm()
+        internal GramAction()
         {
-            return Form.ACTION;
+            this.SetForm(Form.ACTION);
         }
 
-        internal void Activate()
+        internal bool Activate()
         {
-            detected.Invoke();
+            return detected.Invoke();
         }
 
         internal void AddHandler(ActionHandler action)
@@ -118,7 +119,7 @@ namespace CLikeCompiler.Libs
             detected += action; 
         }
 
-        internal delegate void ActionHandler();
+        internal delegate bool ActionHandler();
         private event ActionHandler detected;
     }
 }

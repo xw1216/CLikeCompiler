@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Dynamic;
 using System.Linq;
 using System.Text;
@@ -9,7 +10,7 @@ namespace CLikeCompiler.Libs
 {
     internal class DynamicProperty : DynamicObject
     {
-        private readonly Dictionary<string, object> prop;
+        private readonly Dictionary<string, object> prop = new();
 
         public DynamicProperty() { }
 
@@ -46,10 +47,10 @@ namespace CLikeCompiler.Libs
 
     internal class AnalyStack
     {
-        List<Symbols> symbols = new();
-        List<DynamicProperty> properties = new();
+        private List<Symbols> symbols = new();
+        private List<DynamicProperty> properties = new();
 
-        internal void ResetStack()
+        public void ResetStack()
         {
             symbols.Clear();
             properties.Clear();
