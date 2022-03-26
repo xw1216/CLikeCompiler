@@ -128,8 +128,8 @@ Declare @ VarType Id TypeDeclare | VarType Id FuncDeclare | $void Id FuncDeclare
 TypeDeclare @ VarDeclare | ArrayDeclare
 VarDeclare @ $smc
 FuncDeclare @ $lpar FormParam $rpar StateBlock
-ArrayDeclare @ $lsbrc $integer $rsbrc ArrayDeclareLoop $smc
-ArrayDeclareLoop @ $lsbrc $integer $rsbrc ArrayDeclareLoop | $blank
+ArrayDeclare @ $lsbrc Num $rsbrc ArrayDeclareLoop $smc
+ArrayDeclareLoop @ $lsbrc Num $rsbrc ArrayDeclareLoop | $blank
 FormParam @ ParamList | $void
 ParamList @ Param ParamListLoop
 ParamListLoop @ $cma Param ParamListLoop | $blank
@@ -140,8 +140,7 @@ ArgListLoop @ $cma Expr ArgListLoop | $blank
 StateBlock @ $lbrc InnerDeclare StateCluster $rbrc
 InnerDeclare @ $blank | InnerVarDeclare InnerDeclare
 InnerVarDeclare @ VarType Id TypeDeclare
-StateCluster @ State StateClusterLoop
-StateClusterLoop @ State StateClusterLoop | $blank
+StateCluster @ $blank | State StateCluster
 State @ If | While | Return | Assign
 Assign @ Id $assign Expr $smc | Array $assign Expr $smc
 Return @ $return ReturnAlter $smc
@@ -155,13 +154,13 @@ AddExpr @ Item AddExprLoop
 AddExprLoop @ $plus Item AddExprLoop | $sub Item AddExprLoop | $blank
 Item @ Factor ItemLoop
 ItemLoop @ $mul Factor ItemLoop | $div Factor ItemLoop | $blank
-Factor @ Num | $string | $true | $false | $lpar Expr $rpar | Id CallType | Array
+Factor @ Num | $str | $ch | $true | $false | $lpar Expr $rpar | Id CallType | Array
 CallType @ Call | $blank
 Call @ $lpar Args $rpar
 Array @ Id $lsbrc Expr $rsbrc | Array $lsbrc Expr $rsbrc
 Id @ $id
-VarType @ $int | $long | $float | $double | $bool | $string
-Num @ $integer | $decimal
+VarType @ $int | $long | $bool | $char
+Num @ $integer
 Relop @ $eq | $neq | $leq | $geq | $gre | $les</value>
   </data>
   <data name="GramParser" xml:space="preserve">

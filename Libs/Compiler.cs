@@ -38,8 +38,12 @@ namespace CLikeCompiler.Libs
         internal static MidGenServer midGen;
         internal static OptiServer opti;
         internal static TargGenServer targGen;
+
         internal static ResourceLoader resFile;
+
         internal static MacroTable macroTable;
+        internal static RecordTable recordTable;
+        internal static QuadTable quadTable;
 
         private Compiler()
         {
@@ -58,6 +62,9 @@ namespace CLikeCompiler.Libs
             targGen = new TargGenServer();
             resFile = new ResourceLoader("Res");
             macroTable = new MacroTable();
+            recordTable = new RecordTable();
+            quadTable = new QuadTable();
+            midGen.SetTable(quadTable, recordTable);
         }
 
         public void ResetCompiler()
@@ -83,8 +90,10 @@ namespace CLikeCompiler.Libs
             string srcAfter = "";
             // First make sure base grammar productions is ready.
             if (!StartGramParse()) { return false; }
+            if(!StartGramBuild()) { return false; }
             // Second pre-process the src, and feedback to src input page
             if (!StartPrePro(ref src, ref srcAfter)) { return false; }
+            box.Text = srcAfter;
             lex.SetSrc(ref srcAfter);
             // Third grammar analysis start, get lexical unit from lex
             if(!StartGramServer()) { return false; }
@@ -129,13 +138,14 @@ namespace CLikeCompiler.Libs
             return true;
         }
 
-        public bool StartGramServer()
+        internal bool StartGramBuild()
         {
-            try 
-            { 
+            try
+            {
                 gram.BuildGram();
                 CompilerReportArgs args = new(LogItem.MsgType.INFO, "基础文法解析完成");
                 ReportBackInfo(this, args);
+                return true;
             }
             catch (Exception)
             {
@@ -145,6 +155,10 @@ namespace CLikeCompiler.Libs
                 gram.ResetGramServer();
                 return false;
             }
+        }
+
+        public bool StartGramServer()
+        {
             bool IsGramCorrect = false;
             try { 
                 IsGramCorrect = gram.StartGramAnaly();

@@ -109,6 +109,12 @@ namespace CLikeCompiler.Libs
             this.SetForm(Form.ACTION);
         }
 
+        internal GramAction(string name)
+        {
+            this.SetName(name);
+            this.SetForm(Form.ACTION);
+        }
+
         internal bool Activate()
         {
             return detected.Invoke();

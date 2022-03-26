@@ -18,6 +18,7 @@ namespace CLikeCompiler.Libs
         private int rearPos;
         private int ifdefCnt;
         private int linePos;
+        private bool IsOver;
 
         private static readonly char macroNote = '#';
         private static readonly char newlineNote = '\n';
@@ -38,6 +39,7 @@ namespace CLikeCompiler.Libs
             rearPos = 1;
             ifdefCnt = 0;
             linePos = 1;
+            IsOver = false;
             ResetMacroTable();
         }
 
@@ -69,10 +71,16 @@ namespace CLikeCompiler.Libs
             rootPath = path;
         }
 
+        public bool GetIsOver()
+        {
+            return IsOver;
+        }
+
         public void StartPrePro(ref string src)
         {
             SetSrc(ref src);
             MacroRecognize();
+            IsOver = true;
         }
 
         public void SetMacroTable(ref MacroTable table)

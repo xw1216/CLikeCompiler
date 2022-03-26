@@ -38,6 +38,8 @@ namespace CLikeCompiler.Libs
         private PredictTableItem[,] table;
         private AnalyStack stack = new();
 
+        private LexUnit lastInput;
+
         internal bool IsGramReady { get; private set; } = false;
 
         private readonly string endStr = "end";
@@ -49,6 +51,7 @@ namespace CLikeCompiler.Libs
             nTerms = null;
             table = null;
             IsGramReady = false;
+            lastInput = null;
             stack.ResetStack();
         }
 
@@ -61,6 +64,10 @@ namespace CLikeCompiler.Libs
         {
             stack.ResetStack();
         }
+        internal LexUnit GetLastInput()
+        {
+            return lastInput;
+        }
 
         internal void BuildGram()
         {
@@ -70,8 +77,8 @@ namespace CLikeCompiler.Libs
                 RemoveLeftRecur();
                 PrefixFactoring();
                 CalcuAllFirstAndFollow();
-                //PrintGrammar();
-                //PrintFirstAndFollow();
+                PrintGrammar();
+                PrintFirstAndFollow();
                 BuildPredictTable();
                 IsGramReady = true;
             }
@@ -608,6 +615,7 @@ namespace CLikeCompiler.Libs
                     }
                 }
             }
+            RemoveUnusedProd();
         }
 
         private void FactoringAndNewProd(Prod prod, List<int> shared, int len)
@@ -790,6 +798,11 @@ namespace CLikeCompiler.Libs
             stack.Push(Compiler.parser.GetStartNTerm(), new DynamicProperty());
         }
 
+        private void RestoreLastInput(LexUnit input)
+        {
+            lastInput = input;
+        }
+
         private bool GetLexInput(out LexUnit input)
         {
             return Compiler.lex.GetUnit(out input);
@@ -875,7 +888,7 @@ namespace CLikeCompiler.Libs
             {
                 // TODO 栈顶为非终结符且预测表项有值 进行推导与语义动作入栈控制
                 IsNext = false;
-                LogUtility.NewActionRecord(top, input, "非终结符推导，右部倒序入栈");
+                LogUtility.NewActionRecord(top, input, item.prod.ToString());
                 Compiler.midGen.DeriveHandler(item, input);
                 return true;
             }
@@ -899,9 +912,10 @@ namespace CLikeCompiler.Libs
             LexUnit input = new();
             while (!IsEnd)
             {
-                stack.Top(out Symbols top, out DynamicProperty prop);
+                stack.Top(out Symbols top, out dynamic prop);
                 if(IsNext) 
                 { 
+                    RestoreLastInput(input);
                     GetLexInput(out input); 
                 }
 
@@ -917,7 +931,5 @@ namespace CLikeCompiler.Libs
             }
             return IsCorrect;
         }
-
-
     }
 }

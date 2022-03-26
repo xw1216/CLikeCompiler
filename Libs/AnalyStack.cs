@@ -14,9 +14,25 @@ namespace CLikeCompiler.Libs
 
         public DynamicProperty() { }
 
+        public DynamicProperty(DynamicProperty lhs)
+        {
+            List<string> names = lhs.GetDynamicMemberNames().ToList();
+            foreach (string name in names)
+            {
+                if(prop.ContainsKey(name)) { continue; }
+                prop.Add(name, lhs.GetMember(name));
+            }
+        }
+
         public DynamicProperty(Dictionary<string, object> prop)
         {
             this.prop = prop;
+        }
+
+        public object GetMember(string name)
+        {
+            if (prop.ContainsKey(name)) { return null; }
+            return prop[name];
         }
 
         public override IEnumerable<string> GetDynamicMemberNames()
@@ -48,7 +64,7 @@ namespace CLikeCompiler.Libs
     internal class AnalyStack
     {
         private List<Symbols> symbols = new();
-        private List<DynamicProperty> properties = new();
+        private List<dynamic> properties = new();
 
         public void ResetStack()
         {
@@ -58,7 +74,13 @@ namespace CLikeCompiler.Libs
 
         internal int length { get { return symbols.Count; } }
 
-        internal void Push(Symbols sym, DynamicProperty prop)
+        internal void Push(Symbols sym)
+        {
+            symbols.Add(sym);
+            properties.Add(new DynamicProperty());
+        }
+
+        internal void Push(Symbols sym, dynamic prop)
         {
             symbols.Add(sym);
             properties.Add(prop);
@@ -73,7 +95,7 @@ namespace CLikeCompiler.Libs
             }
         }
 
-        internal bool Pop(out Symbols sym, out DynamicProperty prop)
+        internal bool Pop(out Symbols sym, out dynamic prop)
         {
             if (properties.Count <= 0)
             {
@@ -91,7 +113,7 @@ namespace CLikeCompiler.Libs
             }
         }
 
-        internal bool Top(out Symbols sym, out DynamicProperty prop)
+        internal bool Top(out Symbols sym, out dynamic prop)
         {
             if (properties.Count <= 0)
             {
@@ -107,7 +129,7 @@ namespace CLikeCompiler.Libs
             }
         }
 
-        internal bool RelativeFetch(int dis, out DynamicProperty prop)
+        internal bool RelativeFetch(int dis, out dynamic prop)
         {
             if (properties.Count > dis)
             {

@@ -11,7 +11,8 @@ namespace CLikeCompiler.Libs
         internal enum Type
         {
             ID, KEYWD, OP,
-            INT, DEC, STR, END
+            INT, DEC, STR, 
+            CH, END
         }
 
         internal Type type;
@@ -27,7 +28,8 @@ namespace CLikeCompiler.Libs
             {"int","int"}, {"long","long" }, {"float","float" }, {"double","double" },
             { "bool","bool" }, {"string","string" }, {"if","if" }, {"else","else" },
             {"while","while" }, {"for","for" }, {"break","break" }, {"continue","continue" },
-            {"switch","switch" }, {"case","case" }, {"default","default" }, {"return","return" }
+            {"switch","switch" }, {"case","case" }, {"default","default" }, {"return","return" }, 
+            {"char", "char"}
         };
 
         private static Dictionary<string, string> operators = new Dictionary<string, string>()
@@ -45,7 +47,8 @@ namespace CLikeCompiler.Libs
             "id",
             "integer",
             "decimal",
-            "str"
+            "str",
+            "ch"
         };
 
         private readonly LexUnit endUnit = new();
@@ -53,6 +56,7 @@ namespace CLikeCompiler.Libs
         private readonly char newlineNote = '\n';
         private readonly char whiteNote = ' ';
         private readonly char stringNote = '"';
+        private readonly char charNote = '\'';
         private readonly char dotNote = '.';
 
         private string src = "";
@@ -121,6 +125,11 @@ namespace CLikeCompiler.Libs
                 {
                     StringHandler(ref unit);
                     return !isEnd;
+                } 
+                else if(src[basePos] == charNote)
+                {
+                    CharHandler(ref unit); 
+                    return !isEnd;
                 }
                 else if(IsNumber(src[basePos]))
                 {
@@ -145,6 +154,30 @@ namespace CLikeCompiler.Libs
             unit = endUnit;
             isEnd = true;
             return false;
+        }
+
+        private void CharHandler(ref LexUnit unit)
+        {
+            for (; rearPos < src.Length; rearPos++)
+            {
+                if (src[rearPos] == charNote)
+                {
+                    unit.type = LexUnit.Type.CH;
+                    unit.name = "ch";
+                    unit.cont = src.Substring(basePos, rearPos - basePos + 1);
+                    RemoveBesetNote(unit.cont, charNote);
+                    unit.line = linePos;
+                    rearPos++;
+                    UpdatePosHandlerEnd();
+                    return;
+                }
+                else if (src[rearPos] == newlineNote)
+                {
+                    linePos++;
+                }
+            }
+            SendFrontMessage("未闭合的字符", LogItem.MsgType.ERROR);
+            throw new Exception();
         }
 
         private bool OpratorHandler(ref LexUnit unit) 
@@ -244,8 +277,7 @@ namespace CLikeCompiler.Libs
                     unit.type = LexUnit.Type.STR;
                     unit.name = "str";
                     unit.cont = src.Substring(basePos, rearPos - basePos + 1);
-                    if(unit.cont.First() == stringNote) { unit.cont.Remove(0, 1); }
-                    RemoveStrNote(unit.cont);
+                    RemoveBesetNote(unit.cont, stringNote);
                     unit.line = linePos;
                     rearPos++;
                     UpdatePosHandlerEnd();
@@ -259,10 +291,10 @@ namespace CLikeCompiler.Libs
             throw new Exception();
         }
 
-        private string RemoveStrNote(string str)
+        private string RemoveBesetNote(string str, char ch)
         {
-            if (str.First() == stringNote) { str.Remove(0, 1); }
-            if(str.Last() == stringNote) { str.Remove(str.Length - 1 , 1); }
+            if(str.First() == ch) { str = str.Remove(0, 1); }
+            if(str.Last() == ch) { str = str.Remove(str.Length - 1 , 1); }
             return str;
         } 
 

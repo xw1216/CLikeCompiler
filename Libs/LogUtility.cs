@@ -135,7 +135,7 @@ namespace CLikeCompiler.Libs
             action.msg = msg;
             if(actionDisplayed.Count > recDispCnt)
             {
-                actionDisplayed.RemoveAt(actionDisplayed.Count - 1);
+                actionDisplayed.RemoveAt(0);
             }
             actionDisplayed.Add(action);
         }

@@ -94,8 +94,8 @@ namespace CLikeCompiler.Pages
         {
             infoBar.Severity = InfoBarSeverity.Error;
             infoBar.Message = "编译发生错误，请前往日志页查看相关信息";
-            splitView.IsPaneOpen = true;
             splitView.Visibility = Visibility.Visible;
+            splitView.IsPaneOpen = true;
             infoBar.IsOpen = true;
         }
 
@@ -132,6 +132,11 @@ namespace CLikeCompiler.Pages
         private void TestActionRecordClick(object sender, RoutedEventArgs e)
         {
             LogUtility.ActionRecordTest();
+        }
+
+        private void SingleStepClick(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 
