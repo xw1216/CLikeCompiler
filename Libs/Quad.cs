@@ -11,9 +11,9 @@ namespace CLikeCompiler.Libs
         internal static readonly List<string> quadOp;
 
         internal string Name { get; set; }
-        internal Record Lhs { get; set; }
-        internal Record Rhs { get; set; }
-        internal Record Dst { get; set; }
+        internal IRecord Lhs { get; set; }
+        internal IRecord Rhs { get; set; }
+        internal IRecord Dst { get; set; }
     }
 
     internal class QuadTable
@@ -30,7 +30,7 @@ namespace CLikeCompiler.Libs
             return quadList.Count;
         }
 
-        internal void GenQuad(string name, Record lhs, Record rhs, Record dst)
+        internal void GenQuad(string name, IRecord lhs, IRecord rhs, IRecord dst)
         {
             Quad quad = new();
             quad.Name = name;

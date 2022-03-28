@@ -29,6 +29,12 @@ namespace CLikeCompiler.Libs
             this.prop = prop;
         }
 
+        public static DynamicProperty CreateByDynamic(dynamic lhs)
+        {
+            if (lhs.GetType() != typeof(DynamicProperty)) { return null; }
+            return new DynamicProperty((DynamicProperty)lhs);
+        }
+
         public object GetMember(string name)
         {
             if (prop.ContainsKey(name)) { return null; }

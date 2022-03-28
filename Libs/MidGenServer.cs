@@ -111,9 +111,9 @@ namespace CLikeCompiler.Libs
                 case 1: DeclareClusterPushCtrl();  break;
                 case 2: DeclareClusterLoopPushCtrl();  break;
                 case 3: DeclarePushCtrl(); break;
-                case 4: break;
-                case 5: break;
-                case 6: break;
+                case 4: TypeDeclarePushCtrl(); break;
+                case 5: VarDeclarePushCtrl(); break;
+                case 6: FuncDeclarePushCtrl(); break;
                 case 7: break;
                 case 8: break;
                 case 9: break;
@@ -225,22 +225,66 @@ namespace CLikeCompiler.Libs
             return true;
         }
 
-
         // 4. TypeDeclare -> VarDeclare | ArrayDeclare
 
         private void TypeDeclarePushCtrl()
         {
+            stack.Top(out _, out dynamic TypeDeclareProp);
+            dynamic backProp = DynamicProperty.CreateByDynamic(TypeDeclareProp);
 
+            StackPop();
+            AutoPush(backProp);
         }
 
         // 5. VarDeclare -> smc
         private void VarDeclarePushCtrl()
         {
+            stack.Top(out _, out dynamic VarDeclareProp);
+            recordTable.CreateLocalVarRecord(VarDeclareProp.name, VarDeclareProp.type);
 
+            StackPop();
+            AutoPush(1);
         }
 
         // 6. FuncDeclare -> lpar FormParam S1 rpar S2 StateBlock S3
         private void FuncDeclarePushCtrl()
+        {
+            stack.Top(out _, out dynamic FuncDeclareProp);
+            StackPop();
+
+            dynamic StateBlockProp = new DynamicProperty();
+            dynamic S2Prop = new DynamicProperty();
+            StateBlockProp.returnType = FuncDeclareProp.returnType;
+            S2Prop.returnType = FuncDeclareProp.returnType;
+            S2Prop.name = FuncDeclareProp.name;
+
+            GramAction actionS1 = CreateBindActions("FuncDeclare S1");
+            GramAction actionS2 = CreateBindActions("FuncDeclare S2");
+            GramAction actionS3 = CreateBindActions("FuncDeclare S3");
+            stack.Push(actionS3);
+            AutoPush(StateBlockProp);
+            stack.Push(actionS2, S2Prop);
+            AutoPush(1);
+            stack.Push(actionS1);
+            AutoPush(2);
+        }
+
+        private bool FuncDeclareActionS1()
+        {
+            stack.Top(out _, out dynamic S1Prop);
+            stack.RelativeFetch(2, out dynamic S2Prop);
+            S2Prop.paramDict = S1Prop.paramDict;
+            return true;
+        }
+
+        private bool FuncDeclareActionS2()
+        {
+            int funcAddr = quadTable.NextQuadAddr();
+
+
+        }
+
+        private bool FuncDeclareActionS3()
         {
 
         }
