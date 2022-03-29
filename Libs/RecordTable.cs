@@ -229,7 +229,7 @@ namespace CLikeCompiler.Libs
         {
             for (int i = 0; i < funcTable.Count; i++)
             {
-                funcTable[i].CalcuFrameSize();
+                funcTable[i].CalcuCalleeFrameSize();
             }
         }
 

@@ -50,16 +50,16 @@ namespace CLikeCompiler.Libs
         }
     }
 
-    internal class Regs : IRecord
+    public class Regs : IRecord
     {
         public RecordType GetRecordType()
         {
             return RecordType.REGS;
         }
 
-        internal int Index { get; private set; }
+        public int Index { get; private set; }
         public string Name { get => RegFiles.GetRegName(Index); set {; } }
-        internal IRecord Cont { get; set; }
+        public IRecord Cont { get; set; }
 
         internal Regs(int index)
         {

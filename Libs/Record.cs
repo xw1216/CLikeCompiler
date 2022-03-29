@@ -20,7 +20,8 @@ namespace CLikeCompiler.Libs
         VAR,
         ARRAY,
         LABEL,
-        REGS
+        REGS,
+        IMM
     }
 
     public enum RecordPos
@@ -33,10 +34,12 @@ namespace CLikeCompiler.Libs
 
     public interface IDataRecord
     {
-        int Offset { get; set; }
-        int Width { get; }
         VarType Type { get; set; }
+        int Width { get; }
+
         RecordPos Pos { get; set; }
+        int Offset { get; set; }
+        Regs Reg { get; set; }
 
         static int GetWidth(VarType type)
         {
@@ -56,6 +59,21 @@ namespace CLikeCompiler.Libs
         string Name { get; set; }
         
         RecordType GetRecordType();
+    }
+
+    internal class ImmRecord : IRecord
+    {
+        public RecordType GetRecordType()
+        {
+            return RecordType.IMM;
+        }
+        public string Name { get; set; }
+
+        internal int Init { get; set; } = 0;
+        internal int Offset { get; set; } = 0;
+        internal bool IsSpRel { get; set; } = false;
+
+        internal int Value { get { return Init + Offset; } }
     }
 
     internal class LabelRecord : IRecord
@@ -84,10 +102,11 @@ namespace CLikeCompiler.Libs
     internal class VarRecord : IRecord, IDataRecord
     {
         public string Name { get; set; } = "";
-        public int Offset { get; set; }
         public int Width { get { return IDataRecord.GetWidth(Type); } }
         public VarType Type { get; set ; }
+        public int Offset { get; set; }
         public RecordPos Pos { get; set; }
+        public Regs Reg { get; set; }
 
         internal VarRecord() { }
 
@@ -143,10 +162,11 @@ namespace CLikeCompiler.Libs
         private List<int> dimList = new();
 
         public string Name { get; set; } = "";
-        public int Offset { get; set; }
         public int Width { get { return IDataRecord.GetWidth(Type); } }
         public VarType Type { get; set; }
         public RecordPos Pos { get; set; }
+        public int Offset { get; set; }
+        public Regs Reg { get; set; }
 
         internal int Dim { get
             {
@@ -165,6 +185,8 @@ namespace CLikeCompiler.Libs
                 return len;
             }
         }
+
+
         internal virtual bool IsCons() { return false; }
 
         internal void  SetDimList(List<int> list) { dimList = list; }
@@ -186,6 +208,123 @@ namespace CLikeCompiler.Libs
     }
 
 
+    internal abstract class CallSaver
+    {
+        internal List<Regs> usedRegs = new();
+        internal int usedRegCnt { get { return usedRegs.Count; } }
+
+        internal List<Regs> saveRegs = new();
+        internal int saveRegCnt { get { return saveRegs.Count; } }
+
+        internal List<ImmRecord> updateList = new();
+
+        internal abstract void AddUsedReg(Regs reg);
+        internal void AddUpdateItem(ImmRecord rec) { updateList.Add(rec); }
+
+        internal void Clear()
+        {
+            updateList.Clear();
+            usedRegs.Clear();
+            saveRegs.Clear();
+        }
+    }
+
+    internal class CalleeSaver : CallSaver
+    {
+        private readonly List<int> calleeSaveList = new() { 1, 2, 8, 9, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 };
+
+        internal int Length { get { return saveRegs.Count * FuncRecord.dword; } }
+
+        internal CalleeSaver()
+        {
+            TargGenServer server = Compiler.targGen;
+            AddUsedReg(server.regFile.FindRegs("ra"));
+            AddUsedReg(server.regFile.FindRegs("fp"));
+        }
+
+        internal override void AddUsedReg(Regs reg)
+        {
+            if(usedRegs.Contains(reg)) { return; }
+            usedRegs.Add(reg);
+            if (calleeSaveList.Contains(reg.Index))
+            {
+                saveRegs.Add(reg);
+                ImmRecord imm = new();
+                imm.Name = reg.Name;
+                imm.IsSpRel = true;
+                updateList.Add(imm);
+            }
+        }
+
+        internal void UpdateFrameOffset(int frameSize)
+        {
+            int offset = -FuncRecord.dword;
+            foreach(ImmRecord imm in updateList)
+            {
+                imm.Offset = offset;
+                imm.Init = frameSize;
+                offset -= frameSize;
+            }
+        }
+    }
+
+    internal class CallerSaver : CallSaver
+    {
+        private readonly List<int> callerSaveList = new() { 5, 6, 7, 12, 13, 14, 15, 16, 17, 28, 29, 31 };
+
+        internal int Length { get; private set; } = 0;
+
+        internal void SetSubFuncUsedReg(List<Regs> regs)
+        {
+            foreach(Regs reg in regs)
+            {
+                AddUsedReg(reg);
+            }
+        }
+
+        internal override void AddUsedReg(Regs reg)
+        {
+            if (usedRegs.Contains(reg)) { return; }
+            usedRegs.Add(reg);
+            if (callerSaveList.Contains(reg.Index))
+            {
+                saveRegs.Add(reg);
+                ImmRecord imm = new();
+                imm.Name = reg.Name;
+                imm.IsSpRel = true;
+                updateList.Add(imm);
+            }
+        }
+
+        internal void SetCallerArgument(List<VarRecord> args)
+        {
+            foreach (VarRecord arg in args)
+            {
+                ImmRecord rec = new();
+                rec.Name = arg.Name;
+                rec.IsSpRel = true;
+                updateList.Add(rec);
+            }
+
+            int offset = 0;
+            for (int i = updateList.Count - 1, j = 0; i >= 0; i--, j++)
+            {
+                if (j < args.Count)
+                {
+                    updateList[i].Offset = offset;
+                    offset += args[j].Width;
+                }
+                else
+                {
+                    updateList[i].Offset = offset;
+                    offset += FuncRecord.dword;
+                }
+            }
+            Length = offset;
+        }
+    }
+
+
     internal class FuncRecord : IRecord
     {
         public RecordType GetRecordType()
@@ -193,21 +332,31 @@ namespace CLikeCompiler.Libs
             return RecordType.FUNC;
         }
 
-        private static readonly int fpBaseOffset = 16;
-        private static readonly int dword = 8;
+        internal FuncRecord()
+        {
+            calleePartialFrame = new();
+            calleePartialFrame.Init = fpInitOffset;
+            callerPartialFrame = new();
+        }
+
+        private static readonly int fpInitOffset = 16;
+        internal static readonly int dword = 8;
 
         public string Name { get; set; } = "";
         internal VarType ReturnType { get; set; }
         internal LabelRecord Label { get; set; }
         internal ScopeTable LocalTable { get; set; } = new();
 
-        // TODO : 怎么去确定需要保护现场的寄存器以便确定栈帧长度
-        internal List<Regs> savedRegs = new();
-        internal int SaveRegCnt { get { return savedRegs.Count; } }
+        //  callee regs  由本函数负责跨调用一致
+        //  在本函数的寄存器分配完成后即可确定并不再更改
+        internal readonly CalleeSaver calleeSaver = new();
+        internal readonly ImmRecord calleePartialFrame;
 
-        internal int FrameSize { get; private set; } = fpBaseOffset;
-        internal int OldFpRelPos { get { return FrameSize - 2 * dword; } }
-        internal int RetAddrRelPos { get { return FrameSize - dword; } }
+        // caller regs 跨调用一致不受保护
+        // 故在本函数内调用其他函数时需要
+        // 依据子函数使用的寄存器动态保护
+        internal readonly CallerSaver callerSaver = new();
+        internal readonly ImmRecord callerPartialFrame;
 
         internal int LocalVarOffset { get; private set; } = 0;
         internal int ArgOffset { get; private set; } = 0;
@@ -250,26 +399,65 @@ namespace CLikeCompiler.Libs
             return true;
         }
 
+        internal int CalcuCallerFrameSize(FuncRecord func)
+        {
+            List<VarRecord> argsList = func.argsList;
+            List<Regs> saveRegs = func.calleeSaver.saveRegs ;
+            callerSaver.SetSubFuncUsedReg(saveRegs);
+            callerSaver.SetCallerArgument(argsList);
+            callerPartialFrame.Init = callerSaver.Length;
+            return callerPartialFrame.Init;
+        }
+
+        // 在堆栈临时扩充与缩小时使用以修正相对 SP 偏移量
+        // 调用前先完成 CalcuCallerFrameSize 与 sub sp, sp, callerFrameSize.Init
+        internal void CalcuNewCallOffset(int shift) 
+        {
+            calleePartialFrame.Init += shift;
+            foreach(ImmRecord imm in calleeSaver.updateList)
+            {
+                imm.Init += shift;
+            }
+
+            List<ScopeTable> queue = new();
+            ScopeSortRecur(queue, LocalTable);
+            foreach(ScopeTable table in queue)
+            {
+                for(int i = 0; i < table.Count; i++)
+                {
+                    ((IDataRecord)table[i]).Offset += shift;
+                }
+            }
+        }
+
+        internal void ResetCallerFrame()
+        {
+            callerSaver.Clear();
+        }
+
+        // TODO 执行前确保所有本函数使用的寄存器已经记录好
+        internal int CalcuCalleeFrameSize()
+        {
+            CalcuVarsOffset();
+            calleePartialFrame.Init = LocalVarOffset + calleeSaver.Length;
+            CalcuArgsOffset(calleePartialFrame.Init);
+            calleeSaver.UpdateFrameOffset(calleePartialFrame.Init);
+            return calleePartialFrame.Init;
+        }
+
         private void ScopeSortRecur(List<ScopeTable> queue, ScopeTable table)
         {
-            if(table == null) { return; }
+            if (table == null) { return; }
             queue.Add(table);
             for(int i = 0; i < table.Children.Count; i++)
             {
                 ScopeSortRecur(queue, table.Children[i]);
             }
         }
-        
-        internal void CalcuFrameSize()
-        {
-            FrameSize = SaveRegCnt * dword + LocalVarOffset + fpBaseOffset;
-            CalcuArgsOffset();
-            CalcuVarsOffset();
-        }
 
-        private void CalcuArgsOffset()
+        private void CalcuArgsOffset(int frameSize)
         {
-            ArgOffset = FrameSize;
+            ArgOffset = frameSize;
             for (int i = 0; i < argsList.Count; i++)
             {
                 // former 8 arguments are in register a0 ~ a7
@@ -277,7 +465,7 @@ namespace CLikeCompiler.Libs
                 argsList[i].Offset = ArgOffset;
                 ArgOffset += argsList[i].Width;
             }
-            ArgOffset -= FrameSize;
+            ArgOffset -= frameSize;
         }
 
         private void CalcuVarsOffset()
