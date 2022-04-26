@@ -1,31 +1,17 @@
-﻿using System;
+﻿using CLikeCompiler.Libs.Unit.Analy;
+using CLikeCompiler.Libs.Unit.Prods;
+using CLikeCompiler.Libs.Unit.Symbol;
+using CLikeCompiler.Libs.Util;
+using CLikeCompiler.Libs.Util.LogItem;
+using System;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace CLikeCompiler.Libs
 {
 
-    internal class PredictTableItem
-    {
-        internal Prod prod = null;
-        internal Form form = Form.BLANK;
-        internal int[] pos = new int[2] {0, 0};
 
-        internal enum Form
-        {
-            BLANK,
-            FILL,
-            SYNCH
-        }
-
-        internal bool IsBlank()
-        {
-            return form == Form.BLANK;
-        }
-    }
 
     internal class GramServer
     {
@@ -137,8 +123,8 @@ namespace CLikeCompiler.Libs
             }
             else
             {
-                Compiler.GetInstance().ReportBackInfo(this,
-                        new CompilerReportArgs(LogItem.MsgType.ERROR,
+                Compiler.Instance().ReportBackInfo(this,
+                        new LogReportArgs(LogMsgItem.MsgType.ERROR,
                         "未建立基础文法"));
                 throw new InvalidOperationException();
             }
@@ -216,8 +202,8 @@ namespace CLikeCompiler.Libs
                 }
                 else
                 {
-                    Compiler.GetInstance().ReportBackInfo(this,
-                                        new CompilerReportArgs(LogItem.MsgType.ERROR,
+                    Compiler.Instance().ReportBackInfo(this,
+                                        new LogReportArgs(LogMsgItem.MsgType.ERROR,
                                         $"预测表入口冲突：非终结符 {lhs.GetName()} , 终结符 {term.GetName()}"));
                     throw new InvalidOperationException();
                 }
@@ -495,8 +481,8 @@ namespace CLikeCompiler.Libs
             // Unkonwn sym type , throw exception
             else
             {
-                Compiler.GetInstance().ReportBackInfo(this,
-                                        new CompilerReportArgs(LogItem.MsgType.ERROR,
+                Compiler.Instance().ReportBackInfo(this,
+                                        new LogReportArgs(LogMsgItem.MsgType.ERROR,
                                         "无法计算 First 集，无效的语法符号类型"));
                 throw new InvalidOperationException();
             }
@@ -539,8 +525,8 @@ namespace CLikeCompiler.Libs
             string part = (IsDierct) ? "直接" : "间接";
             if (sym == lhs)
             {
-                Compiler.GetInstance().ReportBackInfo(this,
-                new CompilerReportArgs(LogItem.MsgType.ERROR, 
+                Compiler.Instance().ReportBackInfo(this,
+                new LogReportArgs(LogMsgItem.MsgType.ERROR, 
                                                         $"{part}左递归，无法计算 First 集：" + lhs.GetName()));
                 throw new InvalidOperationException();
             }
@@ -713,7 +699,7 @@ namespace CLikeCompiler.Libs
                     }
                 }
             }
-            Compiler.GetInstance().ReportBackInfo(this, new CompilerReportArgs(LogItem.MsgType.ERROR,
+            Compiler.Instance().ReportBackInfo(this, new LogReportArgs(LogMsgItem.MsgType.ERROR,
                                               "公因子长度计算错误：" + prod.GetLhs().GetName()));
             throw new Exception();
         }
@@ -835,7 +821,7 @@ namespace CLikeCompiler.Libs
             // Analysis Success.
             if (top == Term.end && IsTopInputMatch(top, input)) 
             {
-                LogUtility.NewActionRecord(top, input, "分析完成");
+                Logger.NewActionRecord(top, input, "分析完成");
                 IsNext = false;
                 IsEnd = true;
                 return true; 
@@ -843,16 +829,16 @@ namespace CLikeCompiler.Libs
             // Terminal match, pop and move to next input
             else if (IsTopInputMatch(top, input))
             {
-                LogUtility.NewActionRecord(top, input, "匹配弹出，读入新符");
+                Logger.NewActionRecord(top, input, "匹配弹出，读入新符");
                 stack.Pop();
                 IsNext = true;
                 return true;
             }
             else
             {
-                LogUtility.NewActionRecord(top, input, "无法匹配，跳过输入");
-                Compiler.GetInstance().ReportFrontInfo(this,
-                    new CompilerReportArgs(LogItem.MsgType.WARN,
+                Logger.NewActionRecord(top, input, "无法匹配，跳过输入");
+                Compiler.Instance().ReportFrontInfo(this,
+                    new LogReportArgs(LogMsgItem.MsgType.WARN,
                     $"非预期的语法，跳过输入符号：{input.cont} ", input.line));
                 IsNext = true;
                 return false;
@@ -866,9 +852,9 @@ namespace CLikeCompiler.Libs
             // Encounter Sync Symbol , handle error before
             if (item.form == PredictTableItem.Form.SYNCH)
             {
-                LogUtility.NewActionRecord(top, input, "同步符号，弹出栈顶");
-                Compiler.GetInstance().ReportFrontInfo(this,
-                    new CompilerReportArgs(LogItem.MsgType.WARN,
+                Logger.NewActionRecord(top, input, "同步符号，弹出栈顶");
+                Compiler.Instance().ReportFrontInfo(this,
+                    new LogReportArgs(LogMsgItem.MsgType.WARN,
                     $"遭遇同步符号，{input.cont} ", input.line));
                 stack.Pop();
                 IsNext = false;
@@ -877,18 +863,18 @@ namespace CLikeCompiler.Libs
             // Unexpected input terminal , jump over and continue
             else if (item.form == PredictTableItem.Form.BLANK)
             {
-                LogUtility.NewActionRecord(top, input, "无法匹配，跳过输入");
-                Compiler.GetInstance().ReportFrontInfo(this,
-                    new CompilerReportArgs(LogItem.MsgType.WARN,
+                Logger.NewActionRecord(top, input, "无法匹配，跳过输入");
+                Compiler.Instance().ReportFrontInfo(this,
+                    new LogReportArgs(LogMsgItem.MsgType.WARN,
                     $"非预期的语法，跳过输入符号：{input.cont} ", input.line));
                 IsNext = true;
                 return false;
             }
             else
             {
-                // TODO 栈顶为非终结符且预测表项有值 进行推导与语义动作入栈控制
+                //  栈顶为非终结符且预测表项有值 进行推导与语义动作入栈控制
                 IsNext = false;
-                LogUtility.NewActionRecord(top, input, item.prod.ToString());
+                Logger.NewActionRecord(top, input, item.prod.ToString());
                 Compiler.midGen.DeriveHandler(item, input);
                 return true;
             }
@@ -896,7 +882,7 @@ namespace CLikeCompiler.Libs
 
         private bool GramAnalyActionHandler(LexUnit input, Symbols top, ref bool IsNext)
         {
-            LogUtility.NewActionRecord(top, input, "执行语义动作");
+            Logger.NewActionRecord(top, input, "执行语义动作");
             GramAction act = (GramAction)top;
             bool IsActionCorrect = act.Activate();
 
@@ -924,8 +910,8 @@ namespace CLikeCompiler.Libs
                 else if(top.IsAction()) { IsCorrect &= GramAnalyActionHandler(input, top, ref IsNext); } 
                 else
                 {
-                    Compiler.GetInstance().ReportBackInfo(this, 
-                        new CompilerReportArgs(LogItem.MsgType.ERROR, "分析栈栈顶异常"));
+                    Compiler.Instance().ReportBackInfo(this, 
+                        new LogReportArgs(LogMsgItem.MsgType.ERROR, "分析栈栈顶异常"));
                     throw new Exception();
                 }
             }

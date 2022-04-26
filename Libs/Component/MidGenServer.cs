@@ -1,4 +1,9 @@
-﻿using System;
+﻿using CLikeCompiler.Libs.Enum;
+using CLikeCompiler.Libs.Runtime;
+using CLikeCompiler.Libs.Unit.Analy;
+using CLikeCompiler.Libs.Unit.Symbol;
+using CLikeCompiler.Libs.Util.LogItem;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -31,16 +36,21 @@ namespace CLikeCompiler.Libs
             this.recordTable = recordTable;
         }
 
-        private void SendFrontMessage(string msg, LogItem.MsgType type, int linePos)
+        private void SendFrontMessage(string msg, LogMsgItem.MsgType type, int linePos)
         {
-            CompilerReportArgs args = new(type, msg, linePos);
-            Compiler.GetInstance().ReportFrontInfo(this, args);
+            LogReportArgs args = new(type, msg, linePos);
+            Compiler.Instance().ReportFrontInfo(this, args);
         }
 
-        private void SendBackMessage(string msg, LogItem.MsgType type)
+        private void SendBackMessage(string msg, LogMsgItem.MsgType type)
         {
-            CompilerReportArgs args = new(type, msg);
-            Compiler.GetInstance().ReportBackInfo(this, args);
+            LogReportArgs args = new(type, msg);
+            Compiler.Instance().ReportBackInfo(this, args);
+        }
+
+        internal void StackTopProp(out dynamic prop)
+        {
+            stack.Top(out _, out prop);
         }
 
         internal void StackPop()
@@ -48,7 +58,7 @@ namespace CLikeCompiler.Libs
             stack.Pop();
         }
 
-        internal void AutoPush(int cnt = 1)
+        internal void AutoPush(int cnt)
         {
             if(cnt < engageQueue.Count) { return; }
             for(; cnt > 0; cnt--)
@@ -72,7 +82,7 @@ namespace CLikeCompiler.Libs
             MethodInfo method = server.GetMethod(methodName);
             if(method == null)
             {
-                SendBackMessage("未找到成员函数：" + method, LogItem.MsgType.ERROR);
+                SendBackMessage("未找到成员函数：" + method, LogMsgItem.MsgType.ERROR);
                 throw new Exception();
             }
 

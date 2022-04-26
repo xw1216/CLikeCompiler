@@ -33,13 +33,13 @@ namespace CLikeCompiler.Pages
 
         private void MoreLogClick(object sender, RoutedEventArgs e)
         {
-            LogUtility.GetInstance().OpenLogInNotepad();
+            Logger.GetInstance().OpenLogInNotepad();
             MainWindow.GetInstance().ShowErrorPage("若要继续，请先关闭日志文件。", "提示");
         }
 
         private void ClearLogClick(object sender, RoutedEventArgs e)
         {
-            LogUtility.GetInstance().ClearDisplayRecord();
+            Logger.GetInstance().ClearDisplayRecord();
         }
 
         private void TestLogClick(object sender, RoutedEventArgs e)

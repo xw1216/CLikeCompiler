@@ -126,12 +126,12 @@ namespace CLikeCompiler.Pages
 
         private void ClearActionRecordClick(object sender, RoutedEventArgs e)
         {
-            LogUtility.ClearActionRecord();
+            Logger.ClearActionRecord();
         }
 
         private void TestActionRecordClick(object sender, RoutedEventArgs e)
         {
-            LogUtility.ActionRecordTest();
+            Logger.ActionRecordTest();
         }
 
         private void SingleStepClick(object sender, RoutedEventArgs e)

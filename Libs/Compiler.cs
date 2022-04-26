@@ -8,29 +8,26 @@ using Windows.ApplicationModel.Resources;
 
 using CLikeCompiler.Pages;
 using Microsoft.UI.Xaml.Controls;
+using CLikeCompiler.Libs.Component;
+using CLikeCompiler.Libs.Unit.Symbol;
+using CLikeCompiler.Libs.Runtime;
+using CLikeCompiler.Libs.Util.LogItem;
+using CLikeCompiler.Libs.Util;
 
-[assembly: InternalsVisibleTo("CLikeCompilerTests")]
 namespace CLikeCompiler.Libs
 {
-    public class CompilerReportArgs : EventArgs
-    {
-        public readonly string msg;
-        public readonly int lineNo;
-        public readonly LogItem.MsgType msgType;
-
-        public CompilerReportArgs(LogItem.MsgType msgType, string msg, int lineNo = 0)
-        {
-            this.msg = msg;
-            this.lineNo = lineNo;
-            this.msgType = msgType;
-        }
-    }
 
     public class Compiler
     {
-        public delegate void CompilerReportHandler(object sender, CompilerReportArgs e);
+
+        private Compiler()
+        {
+            RegisterComponents();
+            Term.Init();
+        }
 
         private static Compiler compiler = new();
+
         internal static PreproServer prepro;
         internal static LexServer lex;
         internal static GramParser parser;
@@ -45,11 +42,7 @@ namespace CLikeCompiler.Libs
         internal static RecordTable recordTable;
         internal static QuadTable quadTable;
 
-        private Compiler()
-        {
-            RegisterComponents();
-            Term.Init();
-        }
+        public delegate void CompilerReportHandler(object sender, LogReportArgs e);
 
         private void RegisterComponents()
         {
@@ -64,6 +57,7 @@ namespace CLikeCompiler.Libs
             macroTable = new MacroTable();
             recordTable = new RecordTable();
             quadTable = new QuadTable();
+
             midGen.SetTable(quadTable, recordTable);
         }
 
@@ -77,7 +71,7 @@ namespace CLikeCompiler.Libs
             MainWindow.GetInstance().SetDefaultRootPath();
         }
 
-        public static ref Compiler GetInstance()
+        public static ref Compiler Instance()
         {
             return ref compiler;
         }
@@ -88,32 +82,35 @@ namespace CLikeCompiler.Libs
             lex.ResetLex();
             gram.ResetAnalyStack();
             string srcAfter = "";
+
             // First make sure base grammar productions is ready.
             if (!StartGramParse()) { return false; }
             if(!StartGramBuild()) { return false; }
+
             // Second pre-process the src, and feedback to src input page
             if (!StartPrePro(ref src, ref srcAfter)) { return false; }
             box.Text = srcAfter;
             lex.SetSrc(ref srcAfter);
+
             // Third grammar analysis start, get lexical unit from lex
             if(!StartGramServer()) { return false; }
 
             return true;
         }
 
-        internal bool StartPrePro(ref string input, ref string output)
+        private bool StartPrePro(ref string input, ref string output)
         {
             try
             {
                 prepro.SetMacroTable(ref macroTable);
                 prepro.StartPrePro(ref input);
                 output = prepro.GetSrc();
-                CompilerReportArgs argsSuc = new(LogItem.MsgType.INFO, "预处理完成");
+                LogReportArgs argsSuc = new(LogMsgItem.MsgType.INFO, "预处理完成");
                 ReportBackInfo(this, argsSuc);
             }
             catch (Exception)
             {
-                CompilerReportArgs argsFail = new(LogItem.MsgType.ERROR, "停止预处理");
+                LogReportArgs argsFail = new(LogMsgItem.MsgType.ERROR, "停止预处理");
                 ReportBackInfo(this, argsFail);
                 prepro.ResetPrePro();
                 return false;
@@ -121,16 +118,16 @@ namespace CLikeCompiler.Libs
             return true;
         }
 
-        internal bool StartGramParse()
+        private bool StartGramParse()
         {
             try
             {
                 parser.StartGramParse();
-                CompilerReportArgs args = new(LogItem.MsgType.INFO, "基础文法解析完成");
+                LogReportArgs args = new(LogMsgItem.MsgType.INFO, "基础文法解析完成");
                 ReportBackInfo(this, args);
             } catch (Exception)
             {
-                CompilerReportArgs args = new(LogItem.MsgType.ERROR, "停止文法解析");
+                LogReportArgs args = new(LogMsgItem.MsgType.ERROR, "停止文法解析");
                 ReportBackInfo(this, args);
                 parser.ResetGramParser();
                 return false;
@@ -138,18 +135,18 @@ namespace CLikeCompiler.Libs
             return true;
         }
 
-        internal bool StartGramBuild()
+        private bool StartGramBuild()
         {
             try
             {
                 gram.BuildGram();
-                CompilerReportArgs args = new(LogItem.MsgType.INFO, "基础文法解析完成");
+                LogReportArgs args = new(LogMsgItem.MsgType.INFO, "基础文法解析完成");
                 ReportBackInfo(this, args);
                 return true;
             }
             catch (Exception)
             {
-                CompilerReportArgs args = new(LogItem.MsgType.ERROR, "语法模板建立失败，请检查");
+                LogReportArgs args = new(LogMsgItem.MsgType.ERROR, "语法模板建立失败，请检查");
                 ReportBackInfo(this, args);
                 lex.ResetLex();
                 gram.ResetGramServer();
@@ -157,18 +154,18 @@ namespace CLikeCompiler.Libs
             }
         }
 
-        public bool StartGramServer()
+        private bool StartGramServer()
         {
             bool IsGramCorrect = false;
             try { 
                 IsGramCorrect = gram.StartGramAnaly();
                 string tips = (IsGramCorrect ? "分析完成" : "语法分析完成，发现错误");
-                Compiler.GetInstance().ReportBackInfo(this,
-                        new CompilerReportArgs(LogItem.MsgType.INFO, tips));
+                Compiler.Instance().ReportBackInfo(this,
+                        new LogReportArgs(LogMsgItem.MsgType.INFO, tips));
             }
             catch (Exception)
             {
-                CompilerReportArgs args = new(LogItem.MsgType.ERROR, "内部错误，停止语法检查");
+                LogReportArgs args = new(LogMsgItem.MsgType.ERROR, "内部错误，停止语法检查");
                 ReportBackInfo(this, args);
                 lex.ResetLex();
                 gram.ResetAnalyStack();
@@ -177,20 +174,20 @@ namespace CLikeCompiler.Libs
             return IsGramCorrect;
         }
 
-        internal void ReportFrontInfo(object sender, CompilerReportArgs e)
+        internal void ReportFrontInfo(object sender, LogReportArgs e)
         {
             string msg =
                 (e.lineNo > 0 ?  $"在源码第 {e.lineNo} 行：{e.msg}" : 
                     $"在源码未知行：{e.msg}");
-            LogUtility.GetInstance().NewLogRecord(msg, e.msgType);
+            Logger.Instance().NewLogRecord(msg, e.msgType);
         }
 
-        internal void ReportBackInfo(object sender, CompilerReportArgs e)
+        internal void ReportBackInfo(object sender, LogReportArgs e)
         {
             string partName = GetComponentName(sender);
-            string tipMsg = (e.msgType == LogItem.MsgType.INFO) ?  "：" : "内部问题：";
+            string tipMsg = (e.msgType == LogMsgItem.MsgType.INFO) ?  "：" : "内部问题：";
             string msg = partName + tipMsg +  e.msg;
-            LogUtility.GetInstance().NewLogRecord(msg, e.msgType);
+            Logger.Instance().NewLogRecord(msg, e.msgType);
         }
 
         private string GetComponentName(object sender)
@@ -215,17 +212,14 @@ namespace CLikeCompiler.Libs
         {
             if(resFile == null)
             {
-                ReportBackInfo(this, new CompilerReportArgs(LogItem.MsgType.ERROR, "资源文件丢失"));
+                ReportBackInfo(this, new LogReportArgs(LogMsgItem.MsgType.ERROR, "资源文件丢失"));
             }
             string value = resFile.GetString(key);
             if(value == null) 
             {
-                ReportBackInfo(this, new CompilerReportArgs(LogItem.MsgType.ERROR, "资源中不存在该字符串："+ key));
+                ReportBackInfo(this, new LogReportArgs(LogMsgItem.MsgType.ERROR, "资源中不存在该字符串："+ key));
             }
             return value;
         }
-
-
-        
     }
 }

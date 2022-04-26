@@ -19,6 +19,7 @@ using System.Threading.Tasks;
 using CLikeCompiler.Libs;
 using CLikeCompiler.Pages;
 using Windows.Storage;
+using CLikeCompiler.Libs.Util;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -31,7 +32,7 @@ namespace CLikeCompiler
     public sealed partial class MainWindow : Window
     {
         private static MainWindow Host;
-        public LogUtility logger;
+        public Logger logger;
         public Compiler server;
 
 
@@ -52,9 +53,9 @@ namespace CLikeCompiler
         private void RegisterAllComponents()
         {
             Host = this;
-            logger = LogUtility.GetInstance();
+            logger = Logger.Instance();
             logger.Initialize();
-            server = Compiler.GetInstance();
+            server = Compiler.Instance();
         }
 
         private void SetWindowTitleBar()
@@ -66,7 +67,7 @@ namespace CLikeCompiler
             appWindow.SetIcon("Assets/favicon.ico");
         }
 
-        public ref LogUtility GetLogger()
+        public ref Logger GetLogger()
         {
             return ref logger;
         }

@@ -1,10 +1,12 @@
-﻿using System;
+﻿using CLikeCompiler.Libs.Unit.Prods;
+using CLikeCompiler.Libs.Unit.Symbol;
+using CLikeCompiler.Libs.Util.LogItem;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace CLikeCompiler.Libs
+namespace CLikeCompiler.Libs.Component
 {
     public class GramParser
     {
@@ -25,7 +27,7 @@ namespace CLikeCompiler.Libs
 
         public void StartGramParse()
         {
-            if(!IsBaseGramReady)
+            if (!IsBaseGramReady)
             {
                 GetGramSrc();
                 RuleParse();
@@ -41,11 +43,11 @@ namespace CLikeCompiler.Libs
             nTerms.Clear();
             prods.Clear();
             startNTerm = null;
-            IsBaseGramReady=false;
+            IsBaseGramReady = false;
         }
 
-        internal void AddNewNTerm(NTerm nTerm) 
-        { 
+        internal void AddNewNTerm(NTerm nTerm)
+        {
             nTerms.Add(nTerm);
         }
 
@@ -63,7 +65,7 @@ namespace CLikeCompiler.Libs
 
         private void GetGramSrc()
         {
-            gramSrc = Compiler.GetInstance().GetStrFromResw(gram);
+            gramSrc = Compiler.Instance().GetStrFromResw(gram);
         }
 
 
@@ -71,7 +73,7 @@ namespace CLikeCompiler.Libs
         {
             terms.Add(Term.end);
             Term.end.IncRef();
-            List<string> rules = new (gramSrc.Replace("\r","").Split('\n', 
+            List<string> rules = new(gramSrc.Replace("\r", "").Split('\n',
                 StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries));
             foreach (string rule in rules)
             {
@@ -82,12 +84,12 @@ namespace CLikeCompiler.Libs
 
         private void CheckUndefinedNTerm()
         {
-            foreach(Prod prod in prods)
+            foreach (Prod prod in prods)
             {
-                if(prod.GetLhs().prodIndex < 0)
+                if (prod.GetLhs().prodIndex < 0)
                 {
-                    Compiler.GetInstance().ReportBackInfo(this,
-                    new CompilerReportArgs(LogItem.MsgType.ERROR, "存在未定义的非终结符：" + prod.GetLhs().GetName()));
+                    Compiler.Instance().ReportBackInfo(this,
+                    new LogReportArgs(LogMsgItem.MsgType.ERROR, "存在未定义的非终结符：" + prod.GetLhs().GetName()));
                     throw new Exception();
                 }
             }
@@ -95,10 +97,10 @@ namespace CLikeCompiler.Libs
 
         private void GenProd(ref List<string> side)
         {
-            if(side.Count != 2)
+            if (side.Count != 2)
             {
-                Compiler.GetInstance().ReportBackInfo(this, 
-                    new CompilerReportArgs(LogItem.MsgType.ERROR, "文法格式错误" + side.ToString()));
+                Compiler.Instance().ReportBackInfo(this,
+                    new LogReportArgs(LogMsgItem.MsgType.ERROR, "文法格式错误" + side.ToString()));
                 throw new Exception();
             }
             Prod prod = new Prod();
@@ -118,34 +120,35 @@ namespace CLikeCompiler.Libs
         {
             StringBuilder builder = new StringBuilder();
             prod.NewSubProd();
-            
-            for(int pos = 0; pos < str.Length; pos++)
+
+            for (int pos = 0; pos < str.Length; pos++)
             {
-                if(str[pos] == '|')
+                if (str[pos] == '|')
                 {
                     builder.Clear();
                     prod.NewSubProd();
-                } else if(str[pos] == ' ')
+                }
+                else if (str[pos] == ' ')
                 {
                     builder.Clear();
                     continue;
-                } 
-                else if(str[pos]== '$')
+                }
+                else if (str[pos] == '$')
                 {
-                    pos  = SubNameCut(ref builder, ref str, pos + 1);
-                    if(!(Compiler.lex.IsKeyRecog(builder.ToString())))
+                    pos = SubNameCut(ref builder, ref str, pos + 1);
+                    if (!Compiler.lex.IsKeyRecog(builder.ToString()))
                     {
-                        Compiler.GetInstance().ReportBackInfo(this,
-                        new CompilerReportArgs(LogItem.MsgType.ERROR, "无法识别的文法终结符符号"));
+                        Compiler.Instance().ReportBackInfo(this,
+                        new LogReportArgs(LogMsgItem.MsgType.ERROR, "无法识别的文法终结符符号"));
                     }
                     Term term = CreateGetTerm(builder.ToString());
-                    if(term != null)
+                    if (term != null)
                     {
                         prod.AddSubProdUnit(term);
                     }
                     builder.Clear();
-                } 
-                else if(IsLetter(str[pos]))
+                }
+                else if (IsLetter(str[pos]))
                 {
                     pos = SubNameCut(ref builder, ref str, pos);
                     NTerm nTerm = CreateGetNTerm(builder.ToString());
@@ -154,21 +157,21 @@ namespace CLikeCompiler.Libs
                 }
                 else
                 {
-                    Compiler.GetInstance().ReportBackInfo(this,
-                    new CompilerReportArgs(LogItem.MsgType.ERROR, "无法识别的文法符号"));
+                    Compiler.Instance().ReportBackInfo(this,
+                    new LogReportArgs(LogMsgItem.MsgType.ERROR, "无法识别的文法符号"));
                 }
             }
         }
 
         private bool IsLetter(char c)
         {
-            if((c >= 'a' && c <= 'z' ) || (c >= 'A' && c <= 'Z')) { return true; }
+            if (c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z') { return true; }
             else { return false; }
         }
 
         private int SubNameCut(ref StringBuilder builder, ref string str, int pos)
         {
-            for(; pos < str.Length; pos++)
+            for (; pos < str.Length; pos++)
             {
                 if (str[pos] == ' ') { break; }
                 builder.Append(str[pos]);
@@ -181,9 +184,10 @@ namespace CLikeCompiler.Libs
             if (name == "blank") { return null; }
             foreach (Term term in terms)
             {
-                if(term.GetName() == name) { 
+                if (term.GetName() == name)
+                {
                     term.IncRef();
-                    return term; 
+                    return term;
                 }
             }
 
@@ -196,17 +200,17 @@ namespace CLikeCompiler.Libs
 
         private NTerm CreateGetNTerm(string name)
         {
-            foreach(NTerm nTerm in nTerms)
+            foreach (NTerm nTerm in nTerms)
             {
-                if(nTerm.GetName() == name) 
-                { 
+                if (nTerm.GetName() == name)
+                {
                     nTerm.IncRef();
-                    return nTerm; 
+                    return nTerm;
                 }
             }
 
             NTerm newNTerm = new();
-            if(startNTerm == null)
+            if (startNTerm == null)
             {
                 startNTerm = newNTerm;
             }

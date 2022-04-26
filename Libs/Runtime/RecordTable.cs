@@ -1,4 +1,9 @@
-﻿using System;
+﻿using CLikeCompiler.Libs.Enum;
+using CLikeCompiler.Libs.Record.CodeRecord;
+using CLikeCompiler.Libs.Record.DataRecord;
+using CLikeCompiler.Libs.Record.Interface;
+using CLikeCompiler.Libs.Runtime;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,96 +11,9 @@ using System.Threading.Tasks;
 
 namespace CLikeCompiler.Libs
 {
-    internal class MacroTable
-    {
-        private static List<string> globalMacros = new();
-        private Dictionary<string, string> replaceMacros = new();
+   
 
-        public void AddDefineValue(string key, string value)
-        {
-            replaceMacros.Add(key, value);
-            if (!globalMacros.Contains(key))
-            {
-                globalMacros.Add(key);
-            }
-        }
-
-        public ref Dictionary<string, string> GetLocalMacros()
-        {
-            return ref replaceMacros;
-        }
-
-        public void ClearLocalMacros()
-        {
-            replaceMacros.Clear();
-        }
-
-        public void AddDefineInclude(string key)
-        {
-            globalMacros.Add(key);
-        }
-
-        public bool IsMacroExist(string key)
-        {
-            return globalMacros.Contains(key);
-        }
-
-        public void ResetMacroTable()
-        {
-            globalMacros.Clear();
-            replaceMacros.Clear();
-        }
-    }
-
-    internal class ScopeTable
-    {
-        internal ScopeTable Parent { get; set; } = null;
-        internal List<ScopeTable> Children = new();
-
-        private readonly List<IRecord> records = new();
-        internal int Count { get { return records.Count; } }
-
-        internal IRecord this[int i]
-        {
-            get { return records[i]; }
-            set { records[i] = value; }
-        }
-
-        internal void Clear()
-        {
-            Parent = null;
-            Children.Clear();
-            records.Clear();
-        }
-
-        internal void AddRecord(IRecord rec)
-        {
-            records.Add(rec);
-        }
-
-        internal void AddChildTable(ScopeTable table)
-        {
-            Children.Add(table);
-        }
-
-        internal bool ContainsRecord(IRecord rec)
-        {
-            return records.Contains(rec);
-        }
-
-        internal bool CreateRecord(IRecord rec)
-        {
-            // We can create record when
-            // no same name record is included in state block table
-            if (rec == null) { return false; }
-            foreach (IRecord lhs in records)
-            {
-                if (lhs.Name == rec.Name) { return false; }
-            }
-            records.Add(rec);
-            return true;
-        }
-    }
+    
 
     internal class RecordTable
     {

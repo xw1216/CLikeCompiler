@@ -1,26 +1,12 @@
-﻿using System;
+﻿using CLikeCompiler.Libs.Unit.Analy;
+using CLikeCompiler.Libs.Util.LogItem;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace CLikeCompiler.Libs
 {
-    internal class LexUnit
-    {
-        internal enum Type
-        {
-            ID, KEYWD, OP,
-            INT, DEC, STR, 
-            CH, END
-        }
-
-        internal Type type;
-        internal string name;
-        internal string cont;
-        internal int line;
-    }
-
     internal class LexServer
     {
         private static Dictionary<string, string> keywords = new Dictionary<string, string>() { 
@@ -147,7 +133,7 @@ namespace CLikeCompiler.Libs
                     {
                         return !isEnd;
                     }
-                    SendFrontMessage("不能识别的字符", LogItem.MsgType.ERROR);
+                    SendFrontMessage("不能识别的字符", LogMsgItem.MsgType.ERROR);
                     throw new Exception();
                 }
             }
@@ -176,7 +162,7 @@ namespace CLikeCompiler.Libs
                     linePos++;
                 }
             }
-            SendFrontMessage("未闭合的字符", LogItem.MsgType.ERROR);
+            SendFrontMessage("未闭合的字符", LogMsgItem.MsgType.ERROR);
             throw new Exception();
         }
 
@@ -287,7 +273,7 @@ namespace CLikeCompiler.Libs
                     linePos++;
                 }
             }
-            SendFrontMessage("未闭合的字符串", LogItem.MsgType.ERROR);
+            SendFrontMessage("未闭合的字符串", LogMsgItem.MsgType.ERROR);
             throw new Exception();
         }
 
@@ -358,16 +344,16 @@ namespace CLikeCompiler.Libs
             return (c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z');
         }
 
-        private void SendFrontMessage(string msg, LogItem.MsgType type)
+        private void SendFrontMessage(string msg, LogMsgItem.MsgType type)
         {
-            CompilerReportArgs args = new(type, msg, linePos);
-            Compiler.GetInstance().ReportFrontInfo(this, args);
+            LogReportArgs args = new(type, msg, linePos);
+            Compiler.Instance().ReportFrontInfo(this, args);
         }
 
-        private void SendBackMessage(string msg, LogItem.MsgType type)
+        private void SendBackMessage(string msg, LogMsgItem.MsgType type)
         {
-            CompilerReportArgs args = new(type, msg, linePos);
-            Compiler.GetInstance().ReportBackInfo(this, args);
+            LogReportArgs args = new(type, msg, linePos);
+            Compiler.Instance().ReportBackInfo(this, args);
         }
 
     }
