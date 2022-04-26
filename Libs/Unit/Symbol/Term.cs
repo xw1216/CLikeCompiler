@@ -10,20 +10,20 @@ namespace CLikeCompiler.Libs.Unit.Symbol
     {
         internal Term()
         {
-            this.SetForm(Form.TERM);
+            this.SetForm(Type.TERM);
         }
 
-        internal static Term blank = new Term();
-        internal static Term end = new Term();
+        internal static Term blank = new();
+        internal static Term end = new();
 
         internal static void Init()
         {
             blank.SetName("blank");
             end.SetName("end");
-            blank.SetForm(Form.BLANK);
+            blank.SetForm(Type.BLANK);
         }
 
-        internal bool CanTermRecog(ref string str)
+        internal static bool CanTermRecog(ref string str)
         {
             return Compiler.lex.IsKeyRecog(str);
         }

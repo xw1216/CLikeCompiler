@@ -133,7 +133,7 @@ namespace CLikeCompiler.Libs
                     {
                         return !isEnd;
                     }
-                    SendFrontMessage("不能识别的字符", LogMsgItem.MsgType.ERROR);
+                    SendFrontMessage("不能识别的字符", LogMsgItem.Type.ERROR);
                     throw new Exception();
                 }
             }
@@ -162,7 +162,7 @@ namespace CLikeCompiler.Libs
                     linePos++;
                 }
             }
-            SendFrontMessage("未闭合的字符", LogMsgItem.MsgType.ERROR);
+            SendFrontMessage("未闭合的字符", LogMsgItem.Type.ERROR);
             throw new Exception();
         }
 
@@ -273,7 +273,7 @@ namespace CLikeCompiler.Libs
                     linePos++;
                 }
             }
-            SendFrontMessage("未闭合的字符串", LogMsgItem.MsgType.ERROR);
+            SendFrontMessage("未闭合的字符串", LogMsgItem.Type.ERROR);
             throw new Exception();
         }
 
@@ -344,13 +344,13 @@ namespace CLikeCompiler.Libs
             return (c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z');
         }
 
-        private void SendFrontMessage(string msg, LogMsgItem.MsgType type)
+        private void SendFrontMessage(string msg, LogMsgItem.Type type)
         {
             LogReportArgs args = new(type, msg, linePos);
             Compiler.Instance().ReportFrontInfo(this, args);
         }
 
-        private void SendBackMessage(string msg, LogMsgItem.MsgType type)
+        private void SendBackMessage(string msg, LogMsgItem.Type type)
         {
             LogReportArgs args = new(type, msg, linePos);
             Compiler.Instance().ReportBackInfo(this, args);

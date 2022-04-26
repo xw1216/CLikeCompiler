@@ -13,39 +13,29 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
 {
     internal class FuncRecord : IRecord
     {
-        public RecordType GetRecordType()
-        {
-            return RecordType.FUNC;
-        }
-
-        internal FuncRecord()
-        {
-            calleePartialFrame = new();
-            calleePartialFrame.Initial = fpInitOffset;
-            callerPartialFrame = new();
-        }
-
-        private static readonly int fpInitOffset = 16;
-        internal static readonly int dword = 8;
+        internal static readonly int DWORD = 8;
+        internal static readonly int SAVE_BASE_LEN = 16;
 
         public string Name { get; set; } = "";
         internal VarType ReturnType { get; set; }
         internal LabelRecord Label { get; set; }
         internal ScopeTable LocalTable { get; set; } = new();
 
-        //  callee regs  由本函数负责跨调用一致
-        //  在本函数的寄存器分配完成后即可确定并不再更改
-        internal readonly CalleeSaver calleeSaver = new();
-        internal readonly ImmRecord calleePartialFrame;
+        internal int QuadStartIndex { get; set; } = 0;
+        internal int QuadEndIndex { get; set; } = 0;
 
-        // caller regs 跨调用一致不受保护
-        // 故在本函数内调用其他函数时需要
-        // 依据子函数使用的寄存器动态保护
-        internal readonly CallerSaver callerSaver = new();
-        internal readonly ImmRecord callerPartialFrame;
+        // 经过寄存器分配后 函数实际使用的寄存器
+        internal List<Regs> UsedRegList { get; set; }
+        internal List<Regs> SaveRegList { get; set; }
 
-        internal int LocalVarOffset { get; private set; } = 0;
-        internal int ArgOffset { get; private set; } = 0;
+        // 局部变量总长度
+        internal int VarLength { get; private set; } = 0;
+        // 保存寄存器总长度（含返回地址与 old fp)
+        internal int SaveLength { get; private set; } = SAVE_BASE_LEN;
+        // 栈帧长度
+        internal int FrameLength { get { return VarLength + SaveLength; } }
+        // 参数总长度
+        internal int ArgLength { get; private set; } = 0;
         private List<VarRecord> argsList;
 
         internal List<VarRecord> ArgsList
@@ -55,11 +45,23 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
             {
                 if (value == null) { return; }
                 argsList = value;
-                ArgOffset = 0;
-                for (int i = 0; i < argsList.Count; i++)
-                {
-                    LocalTable.AddRecord(argsList[i]);
-                }
+                
+                CalcuArgPlace();
+            }
+        }
+
+        internal FuncRecord() { }
+
+        public RecordType GetRecordType()
+        {
+            return RecordType.FUNC;
+        }
+
+        internal void AddUsedRegs(Regs reg)
+        {
+            if(!(UsedRegList.Contains(reg)))
+            {
+                UsedRegList.Add(reg);
             }
         }
 
@@ -85,52 +87,53 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
             return true;
         }
 
-        internal int CalcuCallerFrameSize(FuncRecord func)
+        private void CalcuArgPlace()
         {
-            List<VarRecord> argsList = func.argsList;
-            List<Regs> saveRegs = func.calleeSaver.saveRegs;
-            callerSaver.SetSubFuncUsedReg(saveRegs);
-            callerSaver.SetCallerArgument(argsList);
-            callerPartialFrame.Initial = callerSaver.Length;
-            return callerPartialFrame.Initial;
-        }
+            ArgLength = 0;
 
-        // 在堆栈临时扩充与缩小时使用以修正相对 SP 偏移量
-        // 调用前先完成 CalcuCallerFrameSize 与 sub sp, sp, callerFrameSize.Initial
-        internal void CalcuNewCallOffset(int shift)
-        {
-            calleePartialFrame.Initial += shift;
-            foreach (ImmRecord imm in calleeSaver.updateList)
+            int vagancy;
+            for (int i = 0; i < argsList.Count; i++)
             {
-                imm.Initial += shift;
-            }
-
-            List<ScopeTable> queue = new();
-            ScopeSortRecur(queue, LocalTable);
-            foreach (ScopeTable table in queue)
-            {
-                for (int i = 0; i < table.Count; i++)
+                LocalTable.AddRecord(argsList[i]);
+                // 前 8 个函数参数在寄存器 a0 ~ a7 中
+                if (i < 8)
                 {
-                    ((IDataRecord)table[i]).Offset += shift;
+                    argsList[i].Pos = RecordPos.REG;
+                    argsList[i].Reg = Compiler.regFiles.FindFuncArgRegs(i);
                 }
+                else
+                {
+                    argsList[i].Pos = RecordPos.MEM;
+                }
+
+                // 地址对齐
+                if ((vagancy = ArgLength % argsList[i].Width) != 0)
+                {
+                    ArgLength += argsList[i].Width - vagancy;
+                }
+                argsList[i].Offset = ArgLength;
+
+                ArgLength += argsList[i].Width;
             }
         }
 
-        internal void ResetCallerFrame()
+        /// <summary>
+        /// 计算本地保存的寄存器
+        /// </summary>
+        /// <remarks>
+        ///  分配寄存器后才能调用
+        /// </remarks>
+        private void CalcuSavePlace()
         {
-            callerSaver.Clear();
+            SaveRegList = RegFiles.CalcuCalleeSaveList(this);
+            SaveLength = SaveRegList.Count * DWORD + SAVE_BASE_LEN;
         }
 
-        // TODO 执行前确保所有本函数使用的寄存器已经记录好
-        internal int CalcuCalleeFrameSize()
-        {
-            CalcuVarsOffset();
-            calleePartialFrame.Initial = LocalVarOffset + calleeSaver.Length;
-            CalcuArgsOffset(calleePartialFrame.Initial);
-            calleeSaver.UpdateFrameOffset(calleePartialFrame.Initial);
-            return calleePartialFrame.Initial;
-        }
-
+        /// <summary>
+        /// 将函数内所有的局部变量按出现的先后顺序排列
+        /// </summary>
+        /// <param name="queue">变量队列</param>
+        /// <param name="table">函数起始变量表</param>
         private void ScopeSortRecur(List<ScopeTable> queue, ScopeTable table)
         {
             if (table == null) { return; }
@@ -141,72 +144,41 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
             }
         }
 
-        private void CalcuArgsOffset(int frameSize)
-        {
-            ArgOffset = frameSize;
-            for (int i = 0; i < argsList.Count; i++)
-            {
-                // former 8 arguments are in register a0 ~ a7
-                argsList[i].Pos = (i < 8) ? RecordPos.REG : RecordPos.MEM;
-                argsList[i].Offset = ArgOffset;
-                ArgOffset += argsList[i].Width;
-            }
-            ArgOffset -= frameSize;
-        }
-
-        private void CalcuVarsOffset()
+        /// <summary>
+        /// 计算所有局部变量的位置
+        /// </summary>
+        /// <remarks>
+        ///  分配寄存器后才能调用
+        /// </remarks>
+        private void CalcuVarsPlace()
         {
             List<ScopeTable> queue = new();
-            List<IRecord> localVars = new();
+            List<IDataRecord> localVars = new();
             ScopeSortRecur(queue, LocalTable);
 
-            int offset = 0;
-            for (int i = 0; i < queue.Count; i++)
+            for(int i = 0; i < queue.Count; i++)
             {
-                ScopeTable scope = queue[i];
-                for (int j = 0; j < scope.Count; j++)
+                ScopeTable table = queue[i];
+                for(int j = 0; j < table.Count; j++)
                 {
-                    IRecord rec = scope[j];
-                    // Temp Vars under SP firstly
-                    if (rec.GetRecordType() == RecordType.VAR
-                            && ((VarRecord)rec).IsTemp())
-                    {
-                        VarRecord varRecord = (VarRecord)rec;
-                        varRecord.Offset = offset;
-                        varRecord.Pos = RecordPos.MEM;
-                        offset += varRecord.Width;
-                    }
-                    else
-                    {
-                        localVars.Add(rec);
-                    }
+                    localVars.Add(table[j]);
                 }
             }
-            this.LocalVarOffset = offset;
-            CalcuLocalVarOffset(localVars);
-        }
 
-        private void CalcuLocalVarOffset(List<IRecord> localVars)
-        {
-            int offset = this.LocalVarOffset;
-            for (int i = localVars.Count - 1; i >= 0; i--)
+            int offset = -SaveLength;
+            int vacancy = 0;
+            for(int i = 0; i < localVars.Count; i++)
             {
-                if (localVars[i].GetRecordType() == RecordType.VAR)
+                IDataRecord data = localVars[i];
+                
+                if((vacancy = Math.Abs(offset % data.Width)) != 0)
                 {
-                    VarRecord rec = (VarRecord)localVars[i];
-                    rec.Offset = offset;
-                    rec.Pos = RecordPos.MEM;
-                    offset += rec.Width;
+                    offset -= (data.Width - vacancy);
                 }
-                else
-                {
-                    ArrayRecord rec = (ArrayRecord)localVars[i];
-                    rec.Offset = offset;
-                    rec.Pos = RecordPos.MEM;
-                    offset += rec.Length;
-                }
+                offset -= data.Width;
+                data.Pos = RecordPos.MEM;
+                data.Offset = offset;
             }
-            this.LocalVarOffset = offset;
         }
     }
 }

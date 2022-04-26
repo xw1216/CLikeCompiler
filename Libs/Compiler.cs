@@ -13,19 +13,13 @@ using CLikeCompiler.Libs.Unit.Symbol;
 using CLikeCompiler.Libs.Runtime;
 using CLikeCompiler.Libs.Util.LogItem;
 using CLikeCompiler.Libs.Util;
+using CLikeCompiler.Libs.Unit.Reg;
 
 namespace CLikeCompiler.Libs
 {
 
     public class Compiler
     {
-
-        private Compiler()
-        {
-            RegisterComponents();
-            Term.Init();
-        }
-
         private static Compiler compiler = new();
 
         internal static PreproServer prepro;
@@ -36,13 +30,21 @@ namespace CLikeCompiler.Libs
         internal static OptiServer opti;
         internal static TargGenServer targGen;
 
-        internal static ResourceLoader resFile;
+        internal static RegFiles regFiles;
 
         internal static MacroTable macroTable;
         internal static RecordTable recordTable;
         internal static QuadTable quadTable;
 
+        internal static ResourceLoader resFile;
+
         public delegate void CompilerReportHandler(object sender, LogReportArgs e);
+
+        private Compiler()
+        {
+            RegisterComponents();
+            Term.Init();
+        }
 
         private void RegisterComponents()
         {
@@ -53,10 +55,14 @@ namespace CLikeCompiler.Libs
             midGen = new MidGenServer(gram);
             opti = new OptiServer();
             targGen = new TargGenServer();
-            resFile = new ResourceLoader("Res");
+
+            regFiles = new RegFiles();
+
             macroTable = new MacroTable();
             recordTable = new RecordTable();
             quadTable = new QuadTable();
+
+            resFile = new ResourceLoader("Res");
 
             midGen.SetTable(quadTable, recordTable);
         }
@@ -105,12 +111,12 @@ namespace CLikeCompiler.Libs
                 prepro.SetMacroTable(ref macroTable);
                 prepro.StartPrePro(ref input);
                 output = prepro.GetSrc();
-                LogReportArgs argsSuc = new(LogMsgItem.MsgType.INFO, "预处理完成");
+                LogReportArgs argsSuc = new(LogMsgItem.Type.INFO, "预处理完成");
                 ReportBackInfo(this, argsSuc);
             }
             catch (Exception)
             {
-                LogReportArgs argsFail = new(LogMsgItem.MsgType.ERROR, "停止预处理");
+                LogReportArgs argsFail = new(LogMsgItem.Type.ERROR, "停止预处理");
                 ReportBackInfo(this, argsFail);
                 prepro.ResetPrePro();
                 return false;
@@ -123,11 +129,11 @@ namespace CLikeCompiler.Libs
             try
             {
                 parser.StartGramParse();
-                LogReportArgs args = new(LogMsgItem.MsgType.INFO, "基础文法解析完成");
+                LogReportArgs args = new(LogMsgItem.Type.INFO, "基础文法解析完成");
                 ReportBackInfo(this, args);
             } catch (Exception)
             {
-                LogReportArgs args = new(LogMsgItem.MsgType.ERROR, "停止文法解析");
+                LogReportArgs args = new(LogMsgItem.Type.ERROR, "停止文法解析");
                 ReportBackInfo(this, args);
                 parser.ResetGramParser();
                 return false;
@@ -140,13 +146,13 @@ namespace CLikeCompiler.Libs
             try
             {
                 gram.BuildGram();
-                LogReportArgs args = new(LogMsgItem.MsgType.INFO, "基础文法解析完成");
+                LogReportArgs args = new(LogMsgItem.Type.INFO, "基础文法解析完成");
                 ReportBackInfo(this, args);
                 return true;
             }
             catch (Exception)
             {
-                LogReportArgs args = new(LogMsgItem.MsgType.ERROR, "语法模板建立失败，请检查");
+                LogReportArgs args = new(LogMsgItem.Type.ERROR, "语法模板建立失败，请检查");
                 ReportBackInfo(this, args);
                 lex.ResetLex();
                 gram.ResetGramServer();
@@ -161,11 +167,11 @@ namespace CLikeCompiler.Libs
                 IsGramCorrect = gram.StartGramAnaly();
                 string tips = (IsGramCorrect ? "分析完成" : "语法分析完成，发现错误");
                 Compiler.Instance().ReportBackInfo(this,
-                        new LogReportArgs(LogMsgItem.MsgType.INFO, tips));
+                        new LogReportArgs(LogMsgItem.Type.INFO, tips));
             }
             catch (Exception)
             {
-                LogReportArgs args = new(LogMsgItem.MsgType.ERROR, "内部错误，停止语法检查");
+                LogReportArgs args = new(LogMsgItem.Type.ERROR, "内部错误，停止语法检查");
                 ReportBackInfo(this, args);
                 lex.ResetLex();
                 gram.ResetAnalyStack();
@@ -185,7 +191,7 @@ namespace CLikeCompiler.Libs
         internal void ReportBackInfo(object sender, LogReportArgs e)
         {
             string partName = GetComponentName(sender);
-            string tipMsg = (e.msgType == LogMsgItem.MsgType.INFO) ?  "：" : "内部问题：";
+            string tipMsg = (e.msgType == LogMsgItem.Type.INFO) ?  "：" : "内部问题：";
             string msg = partName + tipMsg +  e.msg;
             Logger.Instance().NewLogRecord(msg, e.msgType);
         }
@@ -212,12 +218,12 @@ namespace CLikeCompiler.Libs
         {
             if(resFile == null)
             {
-                ReportBackInfo(this, new LogReportArgs(LogMsgItem.MsgType.ERROR, "资源文件丢失"));
+                ReportBackInfo(this, new LogReportArgs(LogMsgItem.Type.ERROR, "资源文件丢失"));
             }
             string value = resFile.GetString(key);
             if(value == null) 
             {
-                ReportBackInfo(this, new LogReportArgs(LogMsgItem.MsgType.ERROR, "资源中不存在该字符串："+ key));
+                ReportBackInfo(this, new LogReportArgs(LogMsgItem.Type.ERROR, "资源中不存在该字符串："+ key));
             }
             return value;
         }

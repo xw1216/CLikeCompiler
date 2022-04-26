@@ -1,4 +1,5 @@
-﻿using CLikeCompiler.Libs.Record.Interface;
+﻿using CLikeCompiler.Libs.Record.CodeRecord;
+using CLikeCompiler.Libs.Record.Interface;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +11,8 @@ namespace CLikeCompiler.Libs.Unit.Quad
     internal class Quad
     {
         internal static readonly List<string> quadOp;
+
+        internal LabelRecord Label { get; set; }
 
         internal string Name { get; set; }
         internal IRecord Lhs { get; set; }

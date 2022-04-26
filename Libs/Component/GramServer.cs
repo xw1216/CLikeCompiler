@@ -124,7 +124,7 @@ namespace CLikeCompiler.Libs
             else
             {
                 Compiler.Instance().ReportBackInfo(this,
-                        new LogReportArgs(LogMsgItem.MsgType.ERROR,
+                        new LogReportArgs(LogMsgItem.Type.ERROR,
                         "未建立基础文法"));
                 throw new InvalidOperationException();
             }
@@ -172,7 +172,7 @@ namespace CLikeCompiler.Libs
                 int y = terms.IndexOf(term);
                 if(table[x, y].IsBlank())
                 {
-                    table[x, y].form = PredictTableItem.Form.SYNCH;
+                    table[x, y].status = PredictTableItem.Status.SYNCH;
                 }
             }
         }
@@ -195,7 +195,7 @@ namespace CLikeCompiler.Libs
 
                 if (table[x, y].IsBlank())
                 {
-                        table[x, y].form = PredictTableItem.Form.FILL;
+                        table[x, y].status = PredictTableItem.Status.FILL;
                         table[x, y].prod = prod;
                         table[x, y].pos[0] = prodIndex;
                         table[x, y].pos[1] = subIndex;
@@ -203,7 +203,7 @@ namespace CLikeCompiler.Libs
                 else
                 {
                     Compiler.Instance().ReportBackInfo(this,
-                                        new LogReportArgs(LogMsgItem.MsgType.ERROR,
+                                        new LogReportArgs(LogMsgItem.Type.ERROR,
                                         $"预测表入口冲突：非终结符 {lhs.GetName()} , 终结符 {term.GetName()}"));
                     throw new InvalidOperationException();
                 }
@@ -218,7 +218,7 @@ namespace CLikeCompiler.Libs
                 for(int j = 0; j < table.GetLength(1); j++)
                 {
                     table[i, j] = new PredictTableItem();
-                    table[i, j].form = PredictTableItem.Form.BLANK;
+                    table[i, j].status = PredictTableItem.Status.BLANK;
                 }
             }
         }
@@ -482,7 +482,7 @@ namespace CLikeCompiler.Libs
             else
             {
                 Compiler.Instance().ReportBackInfo(this,
-                                        new LogReportArgs(LogMsgItem.MsgType.ERROR,
+                                        new LogReportArgs(LogMsgItem.Type.ERROR,
                                         "无法计算 First 集，无效的语法符号类型"));
                 throw new InvalidOperationException();
             }
@@ -526,7 +526,7 @@ namespace CLikeCompiler.Libs
             if (sym == lhs)
             {
                 Compiler.Instance().ReportBackInfo(this,
-                new LogReportArgs(LogMsgItem.MsgType.ERROR, 
+                new LogReportArgs(LogMsgItem.Type.ERROR, 
                                                         $"{part}左递归，无法计算 First 集：" + lhs.GetName()));
                 throw new InvalidOperationException();
             }
@@ -699,7 +699,7 @@ namespace CLikeCompiler.Libs
                     }
                 }
             }
-            Compiler.Instance().ReportBackInfo(this, new LogReportArgs(LogMsgItem.MsgType.ERROR,
+            Compiler.Instance().ReportBackInfo(this, new LogReportArgs(LogMsgItem.Type.ERROR,
                                               "公因子长度计算错误：" + prod.GetLhs().GetName()));
             throw new Exception();
         }
@@ -838,7 +838,7 @@ namespace CLikeCompiler.Libs
             {
                 Logger.NewActionRecord(top, input, "无法匹配，跳过输入");
                 Compiler.Instance().ReportFrontInfo(this,
-                    new LogReportArgs(LogMsgItem.MsgType.WARN,
+                    new LogReportArgs(LogMsgItem.Type.WARN,
                     $"非预期的语法，跳过输入符号：{input.cont} ", input.line));
                 IsNext = true;
                 return false;
@@ -850,22 +850,22 @@ namespace CLikeCompiler.Libs
         {
             PredictTableItem item = FindPredictItem((NTerm)top, input);
             // Encounter Sync Symbol , handle error before
-            if (item.form == PredictTableItem.Form.SYNCH)
+            if (item.status == PredictTableItem.Status.SYNCH)
             {
                 Logger.NewActionRecord(top, input, "同步符号，弹出栈顶");
                 Compiler.Instance().ReportFrontInfo(this,
-                    new LogReportArgs(LogMsgItem.MsgType.WARN,
+                    new LogReportArgs(LogMsgItem.Type.WARN,
                     $"遭遇同步符号，{input.cont} ", input.line));
                 stack.Pop();
                 IsNext = false;
                 return false;
             }
             // Unexpected input terminal , jump over and continue
-            else if (item.form == PredictTableItem.Form.BLANK)
+            else if (item.status == PredictTableItem.Status.BLANK)
             {
                 Logger.NewActionRecord(top, input, "无法匹配，跳过输入");
                 Compiler.Instance().ReportFrontInfo(this,
-                    new LogReportArgs(LogMsgItem.MsgType.WARN,
+                    new LogReportArgs(LogMsgItem.Type.WARN,
                     $"非预期的语法，跳过输入符号：{input.cont} ", input.line));
                 IsNext = true;
                 return false;
@@ -911,7 +911,7 @@ namespace CLikeCompiler.Libs
                 else
                 {
                     Compiler.Instance().ReportBackInfo(this, 
-                        new LogReportArgs(LogMsgItem.MsgType.ERROR, "分析栈栈顶异常"));
+                        new LogReportArgs(LogMsgItem.Type.ERROR, "分析栈栈顶异常"));
                     throw new Exception();
                 }
             }

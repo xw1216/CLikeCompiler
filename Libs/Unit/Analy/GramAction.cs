@@ -11,13 +11,13 @@ namespace CLikeCompiler.Libs.Unit.Analy
     {
         internal GramAction()
         {
-            SetForm(Form.ACTION);
+            SetForm(Type.ACTION);
         }
 
         internal GramAction(string name)
         {
             SetName(name);
-            SetForm(Form.ACTION);
+            SetForm(Type.ACTION);
         }
 
         internal bool Activate()

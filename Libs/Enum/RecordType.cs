@@ -13,6 +13,7 @@ namespace CLikeCompiler.Libs.Enum
         ARRAY,
         LABEL,
         REGS,
-        IMM
+        IMM,
+        CALL
     }
 }

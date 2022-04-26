@@ -10,6 +10,6 @@ namespace CLikeCompiler.Libs
 {
     internal class TargGenServer
     {
-        internal RegFiles regFile = new();
+        
     }
 }

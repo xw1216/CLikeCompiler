@@ -90,13 +90,13 @@ namespace CLikeCompiler.Libs
             macroTable = table;
         }
 
-        private void SendFrontMessage(string msg, LogMsgItem.MsgType type)
+        private void SendFrontMessage(string msg, LogMsgItem.Type type)
         {
             LogReportArgs args = new(type, msg, linePos);
             Compiler.Instance().ReportFrontInfo(this, args);
         }
 
-        private void SendBackMessage(string msg, LogMsgItem.MsgType type)
+        private void SendBackMessage(string msg, LogMsgItem.Type type)
         {
             LogReportArgs args = new(type, msg, linePos);
             Compiler.Instance().ReportBackInfo(this, args);
@@ -120,7 +120,7 @@ namespace CLikeCompiler.Libs
                     case "endif":
                         EndIfHandler(); break;
                     default:
-                        SendFrontMessage("无法识别的预处理符号", LogMsgItem.MsgType.ERROR);
+                        SendFrontMessage("无法识别的预处理符号", LogMsgItem.Type.ERROR);
                         throw new Exception();
                 }
                 macroPos = MacroNoteIndex();
@@ -135,7 +135,7 @@ namespace CLikeCompiler.Libs
             if(from.Length == 0) { MacroArgLack(); }
             if (macroTable.IsMacroExist(from.ToString()))
             {
-                SendFrontMessage("重复的宏定义", LogMsgItem.MsgType.WARN);
+                SendFrontMessage("重复的宏定义", LogMsgItem.Type.WARN);
             }
 
             StringBuilder to = GetSubString(rearPos);
@@ -180,7 +180,7 @@ namespace CLikeCompiler.Libs
         {
             if(filename.Length == 0) { return null; }
             string filePath = rootPath + @"\" + filename + ".txt";
-            SendFrontMessage("处理子文件：" + filename, LogMsgItem.MsgType.INFO);
+            SendFrontMessage("处理子文件：" + filename, LogMsgItem.Type.INFO);
 
             string text;
             try
@@ -188,13 +188,13 @@ namespace CLikeCompiler.Libs
                 text = System.IO.File.ReadAllText(filePath);
             } catch (Exception)
             {
-                SendFrontMessage("无法读取文件：" + filename, LogMsgItem.MsgType.ERROR);
+                SendFrontMessage("无法读取文件：" + filename, LogMsgItem.Type.ERROR);
                 throw new Exception();
             }
 
             ProcFileRecurs(ref text);
 
-            SendFrontMessage("离开子文件：" + filename, LogMsgItem.MsgType.INFO);
+            SendFrontMessage("离开子文件：" + filename, LogMsgItem.Type.INFO);
             return new StringBuilder(text);
         }
 
@@ -215,7 +215,7 @@ namespace CLikeCompiler.Libs
 
         private void MacroArgLack()
         {
-            SendFrontMessage("宏定义没有参数", LogMsgItem.MsgType.ERROR);
+            SendFrontMessage("宏定义没有参数", LogMsgItem.Type.ERROR);
             throw new Exception();
         }
 
@@ -223,7 +223,7 @@ namespace CLikeCompiler.Libs
         {
             if (ifdefCnt < 0 || ifdefCnt > 0)
             {
-                SendFrontMessage("未能配对 if 宏定义", LogMsgItem.MsgType.ERROR);
+                SendFrontMessage("未能配对 if 宏定义", LogMsgItem.Type.ERROR);
                 throw new Exception();
             }
         }
@@ -346,7 +346,7 @@ namespace CLikeCompiler.Libs
         {
             if (pos < 0 || pos >= src.Length)
             {
-                SendBackMessage("非法的函数参数：CommentHandler", LogMsgItem.MsgType.ERROR);
+                SendBackMessage("非法的函数参数：CommentHandler", LogMsgItem.Type.ERROR);
                 throw new Exception();
             }
             while(pos+1 < src.Length && src[pos+1] == whiteNote)
@@ -360,7 +360,7 @@ namespace CLikeCompiler.Libs
         private int CommentHandler(int pos)
         {
             if(pos < 0 || pos >= src.Length) {
-                SendBackMessage("非法的函数参数：CommentHandler", LogMsgItem.MsgType.ERROR);
+                SendBackMessage("非法的函数参数：CommentHandler", LogMsgItem.Type.ERROR);
                 throw new Exception();
             }
 
@@ -383,18 +383,18 @@ namespace CLikeCompiler.Libs
                         linePos++;
                     }
                 }
-                SendFrontMessage("未闭合的注释符号", LogMsgItem.MsgType.ERROR);
+                SendFrontMessage("未闭合的注释符号", LogMsgItem.Type.ERROR);
                 throw new Exception();
             }
 
-            SendFrontMessage("未闭合的注释符号", LogMsgItem.MsgType.ERROR);
+            SendFrontMessage("未闭合的注释符号", LogMsgItem.Type.ERROR);
             throw new Exception();
         }
 
         private int SetPosToStringEnd(int pos)
         {
             if(pos < 0 || pos >= src.Length) {
-                SendBackMessage("非法的函数参数：SetPosToStringEnd", LogMsgItem.MsgType.ERROR);
+                SendBackMessage("非法的函数参数：SetPosToStringEnd", LogMsgItem.Type.ERROR);
                 throw new Exception();
             }
             for(int i = pos; i < src.Length; i++)
@@ -406,7 +406,7 @@ namespace CLikeCompiler.Libs
                     return i;
                 }
             }
-            SendFrontMessage("未闭合的字符串", LogMsgItem.MsgType.ERROR);
+            SendFrontMessage("未闭合的字符串", LogMsgItem.Type.ERROR);
             throw new Exception();
             /*basePos = src.Length;
             rearPos = invalid;

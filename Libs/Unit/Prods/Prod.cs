@@ -10,7 +10,7 @@ namespace CLikeCompiler.Libs.Unit.Prods
     internal class Prod
     {
         private NTerm lhs;
-        private List<List<Symbols>> rhs = new();
+        private readonly List<List<Symbols>> rhs = new();
 
         internal void SetLhs(NTerm term)
         {
@@ -22,9 +22,9 @@ namespace CLikeCompiler.Libs.Unit.Prods
             return rhs;
         }
 
-        internal ref NTerm GetLhs()
+        internal NTerm GetLhs()
         {
-            return ref lhs;
+            return lhs;
         }
 
         internal void NewSubProd()
@@ -42,6 +42,7 @@ namespace CLikeCompiler.Libs.Unit.Prods
         {
             rhs.Add(sub);
         }
+
         public override string ToString()
         {
             StringBuilder builder = new();

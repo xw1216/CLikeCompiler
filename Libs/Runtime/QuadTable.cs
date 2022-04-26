@@ -41,6 +41,5 @@ namespace CLikeCompiler.Libs.Runtime
         {
             quadList.Clear();
         }
-
     }
 }

@@ -30,6 +30,5 @@ namespace CLikeCompiler.Libs.Record.DataRecord
         {
             return RecordType.VAR;
         }
-
     }
 }

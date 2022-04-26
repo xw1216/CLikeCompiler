@@ -13,20 +13,21 @@ namespace CLikeCompiler.Libs.Record.Interface
         VarType Type { get; set; }
         int Width { get; }
 
-        RecordPos Pos { get; set; }
-        int Offset { get; set; }
-        Regs Reg { get; set; }
+        RecordPos Pos { get; set; } // 实际存储的位置
+        int Offset { get; set; }    // 栈内相对于 fp 的限制
+        Regs Reg { get; set; }   // 如果存储在寄存器中 则具体位置
 
         static int GetWidth(VarType type)
         {
-            switch (type)
+            return type switch
             {
-                case VarType.INT: return 4;
-                case VarType.LONG: return 8;
-                case VarType.BOOL: return 1;
-                case VarType.CHAR: return 1;
-                default: return 0;
-            }
+                VarType.INT => 4,
+                VarType.LONG => 8,
+                VarType.BOOL => 1,
+                VarType.CHAR => 1,
+                VarType.VOID => 0,
+                _ => 0,
+            };
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using CLikeCompiler.Libs.Enum;
 using CLikeCompiler.Libs.Record.Interface;
+using CLikeCompiler.Libs.Unit.Quad;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,19 +11,20 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
 {
     internal class LabelRecord : IRecord
     {
+        private static int tmpCnt = 0;
         public string Name { get; set; } = "";
+
+        internal Quad ToQuad { get; set; }
+
+        internal LabelRecord(Quad quad, string name)
+        {
+            ToQuad = quad;
+            Name = name;
+        }
+
         public RecordType GetRecordType()
         {
             return RecordType.LABEL;
-        }
-
-        private static int tmpCnt = 0;
-
-        internal int Addr { get; set; } = 0;
-        internal LabelRecord(int addr, string name)
-        {
-            Addr = addr;
-            Name = name;
         }
 
         internal static string GetTmpLabelName()

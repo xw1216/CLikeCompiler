@@ -2,7 +2,6 @@
 using CLikeCompiler.Libs.Unit.Symbol;
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Dynamic;
 using System.Linq;
 using System.Text;
@@ -10,12 +9,10 @@ using System.Threading.Tasks;
 
 namespace CLikeCompiler.Libs
 {
-    
-
     internal class AnalyStack
     {
-        private List<Symbols> symbols = new();
-        private List<dynamic> properties = new();
+        private readonly List<Symbols> symbols = new();
+        private readonly List<dynamic> properties = new();
 
         public void ResetStack()
         {

@@ -3,6 +3,7 @@ using CLikeCompiler.Libs.Record.CodeRecord;
 using CLikeCompiler.Libs.Record.DataRecord;
 using CLikeCompiler.Libs.Record.Interface;
 using CLikeCompiler.Libs.Runtime;
+using CLikeCompiler.Libs.Unit.Quad;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,32 +12,31 @@ using System.Threading.Tasks;
 
 namespace CLikeCompiler.Libs
 {
-   
-
-    
-
     internal class RecordTable
     {
         private FuncRecord mainFunc = null;
 
-        private List<ScopeTable> scopeTables;
-        private List<FuncRecord> funcTable;
-        private List<LabelRecord> labelTable;
+        private readonly List<ScopeTable> scopeTables;
+        private readonly List<FuncRecord> funcTable;
+        private readonly List<LabelRecord> labelTable;
+        private readonly List<CallRecord> callTable;
 
-        private ScopeTable consTable;
+        private readonly ScopeTable consTable;
+        private readonly ScopeTable globalTable;
 
-        private ScopeTable globalTable;
         private ScopeTable currentTable;
 
         internal RecordTable()
         {
-            funcTable = new();
-            consTable = new();
-            labelTable = new();
-
             scopeTables = new();
+            funcTable = new();
+            labelTable = new();
+            callTable = new();
+
+            consTable = new();
             globalTable = new();
 
+            // TODO 检查全局表父指针的必要性
             globalTable.Parent = globalTable;
             scopeTables.Add(consTable);
             scopeTables.Add(globalTable);
@@ -46,17 +46,19 @@ namespace CLikeCompiler.Libs
 
         internal void ResetRecordTable()
         {
+            mainFunc = null;
             funcTable.Clear();
             consTable.Clear();
             labelTable.Clear();
+            callTable.Clear();
+
             scopeTables.Clear();
             globalTable.Clear();
             currentTable = null;
         }
 
-        // Record Table Change
-
-        internal ScopeTable NewTable()
+        // 在本函数内进入新的作用域
+        internal ScopeTable EnterScope()
         {
             ScopeTable newTable = new();
             currentTable.AddChildTable(newTable);
@@ -65,8 +67,10 @@ namespace CLikeCompiler.Libs
             return newTable;
         }
 
-        internal ScopeTable LeaveTable()
+        // 离开本函数当前作用域
+        internal ScopeTable LeaveScope()
         {
+            // TODO 记录函数四元式开始与结束位置
             if (currentTable == null || currentTable == globalTable)
             { return globalTable; }
 
@@ -74,21 +78,24 @@ namespace CLikeCompiler.Libs
             return currentTable;
         }
 
-        // Label Definition
-        internal LabelRecord CreateLabelRecord(int addr, string name)
+        // ------------------------- 跳转标签相关 ---------------------------------
+
+        internal LabelRecord CreateLabelRecord(Quad quad, string name)
         {
             foreach (LabelRecord item in labelTable)
             {
                 if (item.Name == name) { return null; }
             }
-            LabelRecord label = new(addr, name);
+            LabelRecord label = new(quad, name);
+            if(quad == null ) { quad.Label = label; }
             labelTable.Add(label);
             return label;
         }
 
-        internal LabelRecord CreateTmpLabelRecord(int addr)
+        internal LabelRecord CreateTmpLabelRecord(Quad quad)
         {
-            LabelRecord tmpLabel = new(addr, LabelRecord.GetTmpLabelName());
+            LabelRecord tmpLabel = new(quad, LabelRecord.GetTmpLabelName());
+            if (quad == null) { quad.Label = tmpLabel; }
             labelTable.Add(tmpLabel);
             return tmpLabel;
         }
@@ -102,7 +109,7 @@ namespace CLikeCompiler.Libs
             return null;
         }
 
-        // Function Definition
+        // -------------------------- 函数相关 ---------------------------------
 
         private string GetArgsAbbr(List<VarRecord> args)
         {
@@ -117,41 +124,31 @@ namespace CLikeCompiler.Libs
             return builder.ToString();
         }
 
-        internal FuncRecord CreateFuncRecord(VarType returnType, string name, List<VarRecord> vars, int addr)
+        internal FuncRecord CreateFuncRecord(VarType returnType, string name, List<VarRecord> vars, Quad quad)
         {
             FuncRecord func = FindFuncRecord(name, vars);
-            if (func != null) { return func; }
+            if (func != null) { return null; }
 
             func = new();
             func.Name = name;
             func.ReturnType = returnType;
             func.ArgsList = vars;
 
-            LabelRecord label = CreateLabelRecord(addr, "Func_" + name + GetArgsAbbr(vars));
+            // 设置主入口函数
+            if (mainFunc == null && func.Name == "main")
+            { mainFunc = func; }
+
+            LabelRecord label = CreateLabelRecord(quad, "Func_" + name + GetArgsAbbr(vars));
             func.Label = label;
+            label.ToQuad = quad;
+            if(quad.Label == null) { quad.Label = label; }
 
             func.LocalTable.Parent = globalTable;
             globalTable.AddChildTable(func.LocalTable);
 
             funcTable.Add(func);
-            // Set main function entry
-            if (mainFunc == null && func.Name == "main") 
-                { mainFunc = func; }
-
             return func;
         }
-
-        // Function Variebles Offset Calculate
-        // TODO: 确保每个函数的压栈寄存器已经配置好
-        internal void CalcuFuncVarOffset()
-        {
-            for (int i = 0; i < funcTable.Count; i++)
-            {
-                funcTable[i].CalcuCalleeFrameSize();
-            }
-        }
-
-        // Function Call
 
         internal FuncRecord FindFuncRecord(string name, List<VarRecord> vars)
         {
@@ -162,8 +159,33 @@ namespace CLikeCompiler.Libs
             return null;
         }
 
-        // Recognize constants
+        // 函数调用关系记录
+        internal CallRecord CreateCallRecord(FuncRecord caller, FuncRecord callee)
+        {
+            if(FindCallRecord(caller, callee) != null) { return null; }
+            CallRecord call = new();
+            call.Caller = caller;
+            call.Callee = callee;
+            callTable.Add(call);
+            return call;
+        }
 
+        internal CallRecord FindCallRecord(FuncRecord caller, FuncRecord callee)
+        {
+            foreach(CallRecord call in callTable)
+            {
+                if(call.Callee == callee && call.Caller == caller)
+                {
+                    return call;
+                }
+            }
+            return null;
+        }
+
+
+        // ----------------------------- 常量相关 ------------------------------------
+
+        // 解析常量
         private void ParseConsRecordInput(ConsVarRecord consVar, VarType type, string cont)
         {
             consVar.Type = type;
@@ -196,8 +218,8 @@ namespace CLikeCompiler.Libs
             }
             else
             {
-                List<string> strList = cont.Split(',', StringSplitOptions.RemoveEmptyEntries |
-                    StringSplitOptions.TrimEntries).ToList();
+                List<string> strList = cont.Split( ',' , 
+                    StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
                 if (type == VarType.INT)
                 { ParseListInput<int>(strList, consArray.list); }
                 else if (type == VarType.LONG)
@@ -221,13 +243,12 @@ namespace CLikeCompiler.Libs
             }
         }
 
-        // Constant Definition
+        // 创建常量
 
         internal ConsVarRecord CreateConsRecord(VarType type, string cont)
         {
             if (FindConsRecord(cont) == null) { return null; }
             ConsVarRecord consVar = new();
-            consVar.Pos = RecordPos.DATA;
             ParseConsRecordInput(consVar, type, cont);
             consTable.AddRecord(consVar);
             return consVar;
@@ -237,19 +258,16 @@ namespace CLikeCompiler.Libs
         {
             if (FindConsRecord(cont) == null) { return null; }
             ConsArrayRecord consArray = new();
-            consArray.Pos = RecordPos.DATA;
             ParseConsRecordInput(consArray, type, cont);
             consTable.AddRecord(consArray);
             return consArray;
         }
 
-        // Constant Find
-
-        private IRecord FindConsRecord(string cont)
+        private IDataRecord FindConsRecord(string cont)
         {
             for (int i = 0; i < consTable.Count; i++)
             {
-                IRecord rec = consTable[i];
+                IDataRecord rec = consTable[i];
                 if (rec.GetRecordType() == RecordType.ARRAY
                     && ((ConsArrayRecord)rec).OriginCont == cont)
                 { return rec; }
@@ -260,7 +278,8 @@ namespace CLikeCompiler.Libs
             return null;
         }
 
-        // Variable Definition
+        // ------------------------------ 变量部分 -------------------------------
+
         internal VarRecord CreateLocalVarRecord(string name, VarType type)
         {
             if (IsLocalRecordExist(name))
@@ -290,17 +309,16 @@ namespace CLikeCompiler.Libs
             return null;
         }
 
-        internal TempVarReocrd CreateTempVarRecord(VarType type)
+        internal VarTempReocrd CreateTempVarRecord(VarType type)
         {
-            TempVarReocrd record = new();
+            VarTempReocrd record = new();
             record.Type = type;
             record.Pos = RecordPos.MEM;
             currentTable.AddRecord(record);
             return record;
         }
-
-        // General Record Find
-
+        
+        // 本作用域内重名检查
         private bool IsLocalRecordExist(string name)
         {
             for (int i = 0; i < currentTable.Count; i++)
@@ -310,7 +328,7 @@ namespace CLikeCompiler.Libs
             return false;
         }
 
-        internal IRecord FindRecord(string name)
+        internal IDataRecord FindRecord(string name)
         {
             ScopeTable scope = currentTable;
             while (true)

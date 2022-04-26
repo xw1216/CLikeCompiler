@@ -12,8 +12,6 @@ using CLikeCompiler.Libs.Util.LogItem;
 
 namespace CLikeCompiler.Libs.Util
 {
-
-
     public class Logger
     {
         private static Logger logger = new();
@@ -79,7 +77,7 @@ namespace CLikeCompiler.Libs.Util
             await FileIO.WriteTextAsync(logFile, "");
         }
 
-        public void NewLogRecord(string msg, LogMsgItem.MsgType type)
+        public void NewLogRecord(string msg, LogMsgItem.Type type)
         {
             RemoveOverflowRecord();
             LogMsgItem item = new(msg, type);
@@ -115,7 +113,6 @@ namespace CLikeCompiler.Libs.Util
         public void ClearDisplayRecord()
         {
             logDisplayed.Clear();
-
         }
 
         public static bool IsLogEmpty()
@@ -126,8 +123,5 @@ namespace CLikeCompiler.Libs.Util
             }
             return false;
         }
-
     }
-
-
 }

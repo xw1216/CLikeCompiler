@@ -8,14 +8,14 @@ namespace CLikeCompiler.Libs.Util.LogItem
 {
     public class LogMsgItem
     {
-        public enum MsgType
+        public enum Type
         {
             INFO,
             WARN,
             ERROR
         }
 
-        public MsgType Serverity { get; set; }
+        public Type Serverity { get; set; }
         public string Content { get; set; }
         public DateTime Time { get; set; }
 
@@ -24,7 +24,7 @@ namespace CLikeCompiler.Libs.Util.LogItem
             Time = DateTime.Now;
         }
 
-        public LogMsgItem(string content, MsgType type = MsgType.INFO)
+        public LogMsgItem(string content, Type type = Type.INFO)
         {
             Content = content;
             Serverity = type;
@@ -47,9 +47,9 @@ namespace CLikeCompiler.Libs.Util.LogItem
             // {x:Bind GetServerityFont()}
             return Serverity switch
             {
-                MsgType.INFO => "\uF13C",
-                MsgType.WARN => "\uF142",
-                MsgType.ERROR => "\uF13D",
+                Type.INFO => "\uF13C",
+                Type.WARN => "\uF142",
+                Type.ERROR => "\uF13D",
                 _ => "\uF13D;",
             };
         }
@@ -58,9 +58,9 @@ namespace CLikeCompiler.Libs.Util.LogItem
         {
             return Serverity switch
             {
-                MsgType.INFO => "提示",
-                MsgType.WARN => "警告",
-                MsgType.ERROR => "错误",
+                Type.INFO => "提示",
+                Type.WARN => "警告",
+                Type.ERROR => "错误",
                 _ => "错误",
             };
         }

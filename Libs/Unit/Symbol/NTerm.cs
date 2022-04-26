@@ -10,7 +10,7 @@ namespace CLikeCompiler.Libs.Unit.Symbol
     {
         internal NTerm()
         {
-            this.SetForm(Form.NONTERM);
+            this.SetForm(Type.NONTERM);
         }
 
         internal int prodIndex { get; set; } = -1;
@@ -29,7 +29,7 @@ namespace CLikeCompiler.Libs.Unit.Symbol
             return first.Any(IsInFollow);
         }
 
-        internal bool IsInFollow(Term term)
+        private bool IsInFollow(Term term)
         {
             return follow.Contains(term);
         }

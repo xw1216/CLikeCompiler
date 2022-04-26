@@ -8,26 +8,26 @@ namespace CLikeCompiler.Libs.Unit.Symbol
 {
     internal abstract class Symbols
     {
-        internal enum Form
+        internal enum Type
         {
             BLANK,
             TERM,
             NONTERM,
             ACTION
         }
-        private Form form;
+        private Type type;
         private string name;
         private int refCnt;
 
         internal Symbols()
         {
-            form = Form.BLANK;
+            type = Type.BLANK;
             name = "";
             refCnt = 0;
         }
 
-        internal Form GetForm() { return form; }
-        protected void SetForm(Form form) { this.form = form; }
+        internal Type GetForm() { return type; }
+        protected void SetForm(Type form) { this.type = form; }
         internal string GetName() { return name; }
         internal void SetName(string name) { this.name = name; }
 
@@ -37,10 +37,10 @@ namespace CLikeCompiler.Libs.Unit.Symbol
 
         internal bool BeRef() { return refCnt > 0; }
 
-        internal bool IsTerm() { return form == Form.TERM; }
-        internal bool IsNTerm() { return form == Form.NONTERM; }
-        internal bool IsAction() { return form == Form.ACTION; }
-        internal bool IsBlank() { return form == Form.BLANK; }
+        internal bool IsTerm() { return type == Type.TERM; }
+        internal bool IsNTerm() { return type == Type.NONTERM; }
+        internal bool IsAction() { return type == Type.ACTION; }
+        internal bool IsBlank() { return type == Type.BLANK; }
 
     }
 }

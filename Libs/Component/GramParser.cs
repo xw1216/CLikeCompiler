@@ -89,7 +89,7 @@ namespace CLikeCompiler.Libs.Component
                 if (prod.GetLhs().prodIndex < 0)
                 {
                     Compiler.Instance().ReportBackInfo(this,
-                    new LogReportArgs(LogMsgItem.MsgType.ERROR, "存在未定义的非终结符：" + prod.GetLhs().GetName()));
+                    new LogReportArgs(LogMsgItem.Type.ERROR, "存在未定义的非终结符：" + prod.GetLhs().GetName()));
                     throw new Exception();
                 }
             }
@@ -100,7 +100,7 @@ namespace CLikeCompiler.Libs.Component
             if (side.Count != 2)
             {
                 Compiler.Instance().ReportBackInfo(this,
-                    new LogReportArgs(LogMsgItem.MsgType.ERROR, "文法格式错误" + side.ToString()));
+                    new LogReportArgs(LogMsgItem.Type.ERROR, "文法格式错误" + side.ToString()));
                 throw new Exception();
             }
             Prod prod = new Prod();
@@ -139,7 +139,7 @@ namespace CLikeCompiler.Libs.Component
                     if (!Compiler.lex.IsKeyRecog(builder.ToString()))
                     {
                         Compiler.Instance().ReportBackInfo(this,
-                        new LogReportArgs(LogMsgItem.MsgType.ERROR, "无法识别的文法终结符符号"));
+                        new LogReportArgs(LogMsgItem.Type.ERROR, "无法识别的文法终结符符号"));
                     }
                     Term term = CreateGetTerm(builder.ToString());
                     if (term != null)
@@ -158,7 +158,7 @@ namespace CLikeCompiler.Libs.Component
                 else
                 {
                     Compiler.Instance().ReportBackInfo(this,
-                    new LogReportArgs(LogMsgItem.MsgType.ERROR, "无法识别的文法符号"));
+                    new LogReportArgs(LogMsgItem.Type.ERROR, "无法识别的文法符号"));
                 }
             }
         }

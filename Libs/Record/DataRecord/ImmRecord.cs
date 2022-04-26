@@ -16,13 +16,6 @@ namespace CLikeCompiler.Libs.Record.DataRecord
         }
         public string Name { get; set; }
 
-        // 初始值
-        internal int Initial { get; set; } = 0;
-        // 若为栈帧值 则记录动态偏移量
-        internal int Offset { get; set; } = 0;
-        // 是否相对于 Sp 寻址
-        internal bool IsSpRel { get; set; } = false;
-
-        internal int Value { get { return Initial + Offset; } }
+        internal long Value { get; set; }
     }
 }

@@ -36,13 +36,13 @@ namespace CLikeCompiler.Libs
             this.recordTable = recordTable;
         }
 
-        private void SendFrontMessage(string msg, LogMsgItem.MsgType type, int linePos)
+        private void SendFrontMessage(string msg, LogMsgItem.Type type, int linePos)
         {
             LogReportArgs args = new(type, msg, linePos);
             Compiler.Instance().ReportFrontInfo(this, args);
         }
 
-        private void SendBackMessage(string msg, LogMsgItem.MsgType type)
+        private void SendBackMessage(string msg, LogMsgItem.Type type)
         {
             LogReportArgs args = new(type, msg);
             Compiler.Instance().ReportBackInfo(this, args);
@@ -82,7 +82,7 @@ namespace CLikeCompiler.Libs
             MethodInfo method = server.GetMethod(methodName);
             if(method == null)
             {
-                SendBackMessage("未找到成员函数：" + method, LogMsgItem.MsgType.ERROR);
+                SendBackMessage("未找到成员函数：" + method, LogMsgItem.Type.ERROR);
                 throw new Exception();
             }
 

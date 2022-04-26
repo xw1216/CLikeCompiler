@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CLikeCompiler.Libs.Enum;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,8 +17,16 @@ namespace CLikeCompiler.Libs.Record.DataRecord
         {
             this.Name = "~Con" + conCnt;
             conCnt++;
+            Pos = Enum.RecordPos.DATA;
         }
 
+        internal ConsVarRecord(VarType type)
+        {
+            this.Name = "~Con" + conCnt;
+            conCnt++;
+            Pos = Enum.RecordPos.DATA;
+            Type = type;
+        }
 
         internal override bool IsCons() { return true; }
     }

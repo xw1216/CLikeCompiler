@@ -10,11 +10,6 @@ namespace CLikeCompiler.Libs.Unit.Reg
 {
     public class Regs : IRecord
     {
-        public RecordType GetRecordType()
-        {
-            return RecordType.REGS;
-        }
-
         public int Index { get; private set; }
         public string Name { get => RegFiles.GetRegName(Index); set {; } }
         public IRecord Cont { get; set; }
@@ -24,5 +19,9 @@ namespace CLikeCompiler.Libs.Unit.Reg
             Index = index;
         }
 
+        public RecordType GetRecordType()
+        {
+            return RecordType.REGS;
+        }
     }
 }

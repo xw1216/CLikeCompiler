@@ -10,12 +10,10 @@ namespace CLikeCompiler.Libs.Unit.Analy
     internal class PredictTableItem
     {
         internal Prod prod = null;
-        internal Form form = Form.BLANK;
+        internal Status status = Status.BLANK;
         internal int[] pos = new int[2] { 0, 0 };
 
-
-
-        internal enum Form
+        internal enum Status
         {
             BLANK,
             FILL,
@@ -24,7 +22,7 @@ namespace CLikeCompiler.Libs.Unit.Analy
 
         internal bool IsBlank()
         {
-            return form == Form.BLANK;
+            return status == Status.BLANK;
         }
     }
 }

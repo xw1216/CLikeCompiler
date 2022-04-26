@@ -8,8 +8,8 @@ namespace CLikeCompiler.Libs.Runtime
 {
     internal class MacroTable
     {
-        private static List<string> globalMacros = new();
-        private Dictionary<string, string> replaceMacros = new();
+        private static readonly List<string> globalMacros = new();
+        private readonly Dictionary<string, string> replaceMacros = new();
 
         public void AddDefineValue(string key, string value)
         {
@@ -20,9 +20,9 @@ namespace CLikeCompiler.Libs.Runtime
             }
         }
 
-        public ref Dictionary<string, string> GetLocalMacros()
+        public Dictionary<string, string> GetLocalMacros()
         {
-            return ref replaceMacros;
+            return replaceMacros;
         }
 
         public void ClearLocalMacros()

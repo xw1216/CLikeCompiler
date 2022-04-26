@@ -12,10 +12,10 @@ namespace CLikeCompiler.Libs.Runtime
         internal ScopeTable Parent { get; set; } = null;
         internal List<ScopeTable> Children = new();
 
-        private readonly List<IRecord> records = new();
+        private readonly List<IDataRecord> records = new();
         internal int Count { get { return records.Count; } }
 
-        internal IRecord this[int i]
+        internal IDataRecord this[int i]
         {
             get { return records[i]; }
             set { records[i] = value; }
@@ -28,7 +28,7 @@ namespace CLikeCompiler.Libs.Runtime
             records.Clear();
         }
 
-        internal void AddRecord(IRecord rec)
+        internal void AddRecord(IDataRecord rec)
         {
             records.Add(rec);
         }
@@ -38,17 +38,17 @@ namespace CLikeCompiler.Libs.Runtime
             Children.Add(table);
         }
 
-        internal bool ContainsRecord(IRecord rec)
+        internal bool ContainsRecord(IDataRecord rec)
         {
             return records.Contains(rec);
         }
 
-        internal bool CreateRecord(IRecord rec)
+        internal bool CreateRecord(IDataRecord rec)
         {
             // We can create record when
             // no same name record is included in state block table
             if (rec == null) { return false; }
-            foreach (IRecord lhs in records)
+            foreach (IDataRecord lhs in records)
             {
                 if (lhs.Name == rec.Name) { return false; }
             }

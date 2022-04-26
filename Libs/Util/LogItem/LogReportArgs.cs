@@ -10,9 +10,9 @@ namespace CLikeCompiler.Libs.Util.LogItem
     {
         public readonly string msg;
         public readonly int lineNo;
-        public readonly LogMsgItem.MsgType msgType;
+        public readonly LogMsgItem.Type msgType;
 
-        public LogReportArgs(LogMsgItem.MsgType msgType, string msg, int lineNo = 0)
+        public LogReportArgs(LogMsgItem.Type msgType, string msg, int lineNo = 0)
         {
             this.msg = msg;
             this.lineNo = lineNo;

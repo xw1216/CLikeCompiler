@@ -45,7 +45,6 @@ namespace CLikeCompiler.Libs.Record.DataRecord
             }
         }
 
-
         internal virtual bool IsCons() { return false; }
 
         internal void SetDimList(List<int> list) { dimList = list; }
