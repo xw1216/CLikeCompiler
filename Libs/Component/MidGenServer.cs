@@ -117,50 +117,50 @@ namespace CLikeCompiler.Libs
         {
             switch(predictRow)
             {
-                case 0: ProgramPushCtrl(); break;
-                case 1: DeclareClusterPushCtrl();  break;
-                case 2: DeclareClusterLoopPushCtrl();  break;
-                case 3: DeclarePushCtrl(); break;
-                case 4: TypeDeclarePushCtrl(); break;
-                case 5: VarDeclarePushCtrl(); break;
-                case 6: FuncDeclarePushCtrl(); break;
-                case 7: break;
-                case 8: break;
-                case 9: break;
-                case 10: break;
-                case 11: break;
-                case 12: break;
-                case 13: break;
-                case 14: break;
-                case 15: break;
-                case 16: break;
-                case 17: break;
-                case 18: break;
-                case 19: break;
-                case 20: break;
-                case 21: break;
-                case 22: break;
-                case 23: break;
-                case 24: break;
-                case 25: break;
-                case 26: break;
-                case 27: break;
-                case 28: break;
-                case 29: break;
-                case 30: break;
-                case 31: break;
-                case 32: break;
-                case 33: break;
-                case 34: break;
-                case 35: break;
-                case 36: break;
-                case 37: break;
-                case 38: break;
-                case 39: break;
-                case 40: break;
-                case 41: break;
-                case 42: break;
-                case 43: break;
+                case 0:  ProgramPushCtrl(); break;
+                case 1:  DeclareClusterPushCtrl();  break;
+                case 2:  DeclareClusterLoopPushCtrl();  break;
+                case 3:  DeclarePushCtrl(); break;
+                case 4:  TypeDeclarePushCtrl(); break;
+                case 5:  VarDeclarePushCtrl(); break;
+                case 6:  FuncDeclarePushCtrl(); break;
+                case 7:  ArrayDeclarePushCtrl(); break;
+                case 8:  ArrayDeclareLoopPushCtrl(); break;
+                case 9:  FormParamPushCtrl(); break;
+                case 10: ParamListPushCtrl(); break;
+                case 11: ParamListLoopPushCtrl(); break;
+                case 12: ParamPushCtrl(); break;
+                case 13: ArgsPushCtrl(); break;
+                case 14: ArgsListPushCtrl(); break;
+                case 15: ArgListLoopPushCtrl(); break;
+                case 16: StateBlockPushCtrl(); break;
+                case 17: InnerDeclarePushCtrl(); break;
+                case 18: InnerVarDeclarePushCtrl(); break;
+                case 19: StateClusterPushCtrl(); break;
+                case 20: StatePushCtrl(); break;
+                case 21: AssignPushCtrl(); break;
+                case 22: ReturnPushCtrl(); break;
+                case 23: ReturnAlterPushCtrl(); break;
+                case 24: WhilePushCtrl(); break;
+                case 25: IfPushCtrl(); break;
+                case 26: IfAlterPushCtrl(); break;
+                case 27: ExprPushCtrl(); break;
+                case 28: ExprLoopPushCtrl(); break;
+                case 29: AddExprPushCtrl(); break;
+                case 30: AddExprLoopPushCtrl(); break;
+                case 31: ItemPushCtrl(); break;
+                case 32: ItemLoopPushCtrl(); break;
+                case 33: FactorPushCtrl(); break;
+                case 34: CallTypePushCtrl(); break;
+                case 35: CallPushCtrl(); break;
+                case 36: IdPushCtrl(); break;
+                case 37: VarTypePushCtrl(); break;
+                case 38: NumPushCtrl(); break;
+                case 39: RelopPushCtrl(); break;
+                case 40: ArraySPushCtrl(); break;
+                case 41: DeclareTPushCtrl(); break;
+                case 42: AssignTPushCtrl(); break;
+                case 43: FactorTPushCtrl(); break;
                 default: DefaultDeriveNoProp();  break;
             }
         }
@@ -286,6 +286,8 @@ namespace CLikeCompiler.Libs
             S2Prop.paramDict = S1Prop.paramDict;
             return true;
         }
+
+        // 完成语义函数编写
 
         private bool FuncDeclareActionS2()
         {

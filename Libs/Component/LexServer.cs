@@ -9,12 +9,12 @@ namespace CLikeCompiler.Libs
 {
     internal class LexServer
     {
-        private static Dictionary<string, string> keywords = new Dictionary<string, string>() { 
+        private static Dictionary<string, string> keywords = new Dictionary<string, string>() {
             { "", "blank"}, {"true","true"}, {"false", "false" }, {"void","void" },
             {"int","int"}, {"long","long" }, {"float","float" }, {"double","double" },
             { "bool","bool" }, {"string","string" }, {"if","if" }, {"else","else" },
             {"while","while" }, {"for","for" }, {"break","break" }, {"continue","continue" },
-            {"switch","switch" }, {"case","case" }, {"default","default" }, {"return","return" }, 
+            {"switch","switch" }, {"case","case" }, {"default","default" }, {"return","return" },
             {"char", "char"}
         };
 
