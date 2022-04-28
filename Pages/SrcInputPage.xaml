@@ -6,6 +6,8 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:data="using:CLikeCompiler.Libs"
+    xmlns:util="using:CLikeCompiler.Libs.Util"
+    xmlns:logItem="using:CLikeCompiler.Libs.Util.LogItem"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     NavigationCacheMode="Required">
@@ -101,7 +103,7 @@
                     </Grid>
 
                     <ListView x:Name="CheckMsgLink" SelectionMode="Single"  Grid.Row="2" 
-                                    ItemsSource="{x:Bind data:LogUtility.ActionDisplayed}"
+                                    ItemsSource="{x:Bind util:Logger.ActionDisplayed}"
                                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                         <ListView.ItemContainerTransitions>
                             <TransitionCollection>
@@ -110,7 +112,7 @@
                             </TransitionCollection>
                         </ListView.ItemContainerTransitions>
                         <ListView.ItemTemplate>
-                        <DataTemplate x:DataType="data:ActionRecord">
+                        <DataTemplate x:DataType="logItem:LogAnalyItem">
                                 <Grid Margin="14, 7, 14, 7" Height="16">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="1.5*"/>

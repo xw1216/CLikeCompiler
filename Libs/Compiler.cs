@@ -27,8 +27,8 @@ namespace CLikeCompiler.Libs
         internal static GramParser parser;
         internal static GramServer gram;
         internal static MidGenServer midGen;
-        internal static OptiServer opti;
-        internal static TargGenServer targGen;
+        internal static OptimizeServer optimize;
+        internal static TargetGenServer targetGen;
 
         internal static RegFiles regFiles;
 
@@ -53,8 +53,8 @@ namespace CLikeCompiler.Libs
             parser = new GramParser();
             gram = new GramServer();
             midGen = new MidGenServer(gram);
-            opti = new OptiServer();
-            targGen = new TargGenServer();
+            optimize = new OptimizeServer();
+            targetGen = new TargetGenServer();
 
             regFiles = new RegFiles();
 
@@ -162,10 +162,10 @@ namespace CLikeCompiler.Libs
 
         private bool StartGramServer()
         {
-            bool IsGramCorrect = false;
+            bool isGramCorrect = false;
             try { 
-                IsGramCorrect = gram.StartGramAnaly();
-                string tips = (IsGramCorrect ? "分析完成" : "语法分析完成，发现错误");
+                isGramCorrect = gram.StartGramAnaly();
+                string tips = (isGramCorrect ? "分析完成" : "语法分析完成，发现错误");
                 Compiler.Instance().ReportBackInfo(this,
                         new LogReportArgs(LogMsgItem.Type.INFO, tips));
             }
@@ -177,7 +177,7 @@ namespace CLikeCompiler.Libs
                 gram.ResetAnalyStack();
                 return false;
             }
-            return IsGramCorrect;
+            return isGramCorrect;
         }
 
         internal void ReportFrontInfo(object sender, LogReportArgs e)
@@ -219,6 +219,7 @@ namespace CLikeCompiler.Libs
             if(resFile == null)
             {
                 ReportBackInfo(this, new LogReportArgs(LogMsgItem.Type.ERROR, "资源文件丢失"));
+                throw new NullReferenceException("");
             }
             string value = resFile.GetString(key);
             if(value == null) 

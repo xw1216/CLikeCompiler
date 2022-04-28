@@ -11,8 +11,8 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
 {
     internal class LabelRecord : IRecord
     {
-        private static int tmpCnt = 0;
-        public string Name { get; set; } = "";
+        private static int tmpCnt;
+        public string Name { get; set; }
 
         internal Quad ToQuad { get; set; }
 

@@ -1,13 +1,9 @@
-﻿using CLikeCompiler.Libs.Unit.Analy;
-using CLikeCompiler.Libs.Unit.Symbol;
-using System;
-using System.Collections.Generic;
-using System.Dynamic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using CLikeCompiler.Libs.Unit.Analy;
+using CLikeCompiler.Libs.Unit.Symbol;
 
-namespace CLikeCompiler.Libs
+namespace CLikeCompiler.Libs.Runtime
 {
     internal class AnalyStack
     {
@@ -20,7 +16,7 @@ namespace CLikeCompiler.Libs
             properties.Clear();
         }
 
-        internal int length { get { return symbols.Count; } }
+        internal int Length => symbols.Count;
 
         internal void Push(Symbols sym)
         {
@@ -36,11 +32,9 @@ namespace CLikeCompiler.Libs
 
         internal void Pop()
         {
-            if(properties.Count > 0)
-            {
-                symbols.RemoveAt(symbols.Count - 1);
-                properties.RemoveAt(properties.Count - 1);
-            }
+            if (properties.Count <= 0) return;
+            symbols.RemoveAt(symbols.Count - 1);
+            properties.RemoveAt(properties.Count - 1);
         }
 
         internal bool Pop(out Symbols sym, out dynamic prop)

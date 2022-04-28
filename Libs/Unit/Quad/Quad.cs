@@ -10,11 +10,11 @@ namespace CLikeCompiler.Libs.Unit.Quad
 {
     internal class Quad
     {
-        internal static readonly List<string> quadOp;
+        public static readonly List<string> QuadOp = new();
 
         internal LabelRecord Label { get; set; }
 
-        internal string Name { get; set; }
+        internal string Name { get; set; } = "";
         internal IRecord Lhs { get; set; }
         internal IRecord Rhs { get; set; }
         internal IRecord Dst { get; set; }

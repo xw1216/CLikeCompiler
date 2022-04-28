@@ -30,14 +30,12 @@ namespace CLikeCompiler.Libs.Unit.Analy
 
         public static DynamicProperty CreateByDynamic(dynamic lhs)
         {
-            if (lhs.GetType() != typeof(DynamicProperty)) { return null; }
-            return new DynamicProperty((DynamicProperty)lhs);
+            return lhs.GetType() != typeof(DynamicProperty) ? null : new DynamicProperty((DynamicProperty)lhs);
         }
 
-        public object GetMember(string name)
+        private object GetMember(string name)
         {
-            if (prop.ContainsKey(name)) { return null; }
-            return prop[name];
+            return prop.ContainsKey(name) ? null : prop[name];
         }
 
         public override IEnumerable<string> GetDynamicMemberNames()

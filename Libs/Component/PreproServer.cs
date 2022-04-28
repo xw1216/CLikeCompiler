@@ -1,12 +1,10 @@
-﻿using CLikeCompiler.Libs.Runtime;
-using CLikeCompiler.Libs.Util.LogItem;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using CLikeCompiler.Libs.Runtime;
+using CLikeCompiler.Libs.Util.LogItem;
 
-namespace CLikeCompiler.Libs
+namespace CLikeCompiler.Libs.Component
 {
     internal class PreproServer
     {
@@ -20,13 +18,13 @@ namespace CLikeCompiler.Libs
         private int rearPos;
         private int ifdefCnt;
         private int linePos;
-        private bool IsOver;
+        private bool isOver;
 
-        private static readonly char macroNote = '#';
-        private static readonly char newlineNote = '\n';
-        private static readonly char stringNote = '"';
-        private static readonly char whiteNote = ' ';
-        private readonly int invalid = -1;
+        private const char MacroNote = '#';
+        private const char NewlineNote = '\n';
+        private const char StringNote = '"';
+        private const char WhiteNote = ' ';
+        private const int Invalid = -1;
 
 
         public PreproServer()
@@ -36,25 +34,27 @@ namespace CLikeCompiler.Libs
 
         public void ResetPrePro()
         {
-            if(src != null) src.Clear();
+            src?.Clear();
             basePos = 0;
             rearPos = 1;
             ifdefCnt = 0;
             linePos = 1;
-            IsOver = false;
+            isOver = false;
             ResetMacroTable();
         }
 
         private void ResetMacroTable()
         {
-            if(macroTable != null)
-                macroTable.ResetMacroTable();
+            macroTable?.ResetMacroTable();
         }
 
-        public void SetSrc(ref string src)
+        private void SetSrc(ref string srcArg)
         {
-            src = src.Replace("\r\n", "\n").Replace("\r", "\n").Replace('\t', ' ').Trim();
-            this.src = new(src);
+            srcArg = srcArg.Replace("\r\n", "\n")
+                .Replace("\r", "\n")
+                .Replace('\t', ' ')
+                .Trim();
+            this.src = new StringBuilder(srcArg);
             
         }
 
@@ -75,14 +75,14 @@ namespace CLikeCompiler.Libs
 
         public bool GetIsOver()
         {
-            return IsOver;
+            return isOver;
         }
 
-        public void StartPrePro(ref string src)
+        public void StartPrePro(ref string srcArg)
         {
-            SetSrc(ref src);
+            SetSrc(ref srcArg);
             MacroRecognize();
-            IsOver = true;
+            isOver = true;
         }
 
         public void SetMacroTable(ref MacroTable table)
@@ -106,7 +106,7 @@ namespace CLikeCompiler.Libs
         {
             int macroPos = MacroNoteIndex();
 
-            while(macroPos != invalid)
+            while(macroPos != Invalid)
             {
                 StringBuilder builder = GetSubString(macroPos + 1);
                 switch (builder.ToString())
@@ -125,7 +125,7 @@ namespace CLikeCompiler.Libs
                 }
                 macroPos = MacroNoteIndex();
             }
-            CheckIfDismatch();
+            CheckIfMismatch();
             DefineReplacement();
         }
 
@@ -165,8 +165,8 @@ namespace CLikeCompiler.Libs
             StringBuilder filename = GetSubString(rearPos);
             RemoveMacro();
             if(!(filename.Length > 0 ||
-                (filename[0] == '<' && filename[filename.Length-1] == '>') ||
-                (filename[0] == '"' && filename[filename.Length - 1] == '"')))
+                (filename[0] == '<' && filename[^1] == '>') ||
+                (filename[0] == '"' && filename[^1] == '"')))
             {
                 MacroArgLack();
             }
@@ -198,10 +198,10 @@ namespace CLikeCompiler.Libs
             return new StringBuilder(text);
         }
 
-        private void ProcFileRecurs(ref string src)
+        private static void ProcFileRecurs(ref string src)
         {
             PreproServer prepro = new();
-            MacroTable macroTable = new MacroTable();
+            MacroTable macroTable = new();
             prepro.SetMacroTable(ref macroTable);
             prepro.StartPrePro(ref src);
             src = prepro.GetSrc();
@@ -219,7 +219,7 @@ namespace CLikeCompiler.Libs
             throw new Exception();
         }
 
-        private void CheckIfDismatch()
+        private void CheckIfMismatch()
         {
             if (ifdefCnt < 0 || ifdefCnt > 0)
             {
@@ -246,14 +246,13 @@ namespace CLikeCompiler.Libs
         {
             int start = basePos;
             int nextMacroPos;
-            StringBuilder macro;
             do
             {
                 nextMacroPos = MacroNoteIndex();
-                macro = GetSubString(rearPos);
+                StringBuilder macro = GetSubString(rearPos);
                 if(macro.ToString() == "ifndef") { ifdefCnt++; }
                 else if(macro.ToString() == "endif") { ifdefCnt--; }
-            } while (ifdefCnt > 0 || nextMacroPos != invalid);
+            } while (ifdefCnt > 0 || nextMacroPos != Invalid);
             SetPosToNextLine();
             int end = basePos;
             RemoveSrc(start, end);
@@ -284,7 +283,7 @@ namespace CLikeCompiler.Libs
             }
             if (basePos >= src.Length)
             {
-                rearPos = invalid;
+                rearPos = Invalid;
             } else
             {
                 basePos++;
@@ -297,7 +296,7 @@ namespace CLikeCompiler.Libs
         {
             if (basePos == src.Length)
             {
-                rearPos = invalid;
+                rearPos = Invalid;
             }
             else
             {
@@ -316,30 +315,30 @@ namespace CLikeCompiler.Libs
                 str.Append(src[pos]);
                 pos++;
             }
-            if (pos >= src.Length || pos < 0) { rearPos = invalid; }
+            if (pos >= src.Length || pos < 0) { rearPos = Invalid; }
             else { rearPos = pos; }
             return str;
         }
         
         private int MacroNoteIndex()
         {
-            if (basePos == invalid) { return invalid; }
+            if (basePos == Invalid) { return Invalid; }
             for (int i = basePos; i < src.Length; i++)
             {
                 if(i < 0) { break; }
-                if (src[i] == macroNote)
+                if (src[i] == MacroNote)
                 {
                     basePos = i;
                     rearPos = i + 1;
                     return i;
                 }
-                else if(src[i] == stringNote) { i = SetPosToStringEnd(i + 1); } 
+                else if(src[i] == StringNote) { i = SetPosToStringEnd(i + 1); } 
                 else if (src[i] == '/') { i = CommentHandler(i); }
-                else if (src[i] == newlineNote) { linePos++; }
-                else if(src[i] == whiteNote) { MergeWhiteSpace(i); }
+                else if (src[i] == NewlineNote) { linePos++; }
+                else if(src[i] == WhiteNote) { MergeWhiteSpace(i); }
             }
-            basePos = rearPos = invalid;
-            return invalid;
+            basePos = rearPos = Invalid;
+            return Invalid;
         }
 
         private void MergeWhiteSpace(int pos)
@@ -349,7 +348,7 @@ namespace CLikeCompiler.Libs
                 SendBackMessage("非法的函数参数：CommentHandler", LogMsgItem.Type.ERROR);
                 throw new Exception();
             }
-            while(pos+1 < src.Length && src[pos+1] == whiteNote)
+            while(pos+1 < src.Length && src[pos+1] == WhiteNote)
             {
                 src.Remove(pos + 1, 1);
             }
@@ -378,7 +377,7 @@ namespace CLikeCompiler.Libs
                         int end = basePos = pos + 2;
                         RemoveSrc(start, end);
                         return pos - 1;
-                     } else if(src[pos] == newlineNote)
+                    } else if(src[pos] == NewlineNote)
                     {
                         linePos++;
                     }
@@ -399,7 +398,7 @@ namespace CLikeCompiler.Libs
             }
             for(int i = pos; i < src.Length; i++)
             {
-                if(src[i] == stringNote)
+                if(src[i] == StringNote)
                 {
                     basePos = i + 1;
                     UpdateRear();
@@ -408,22 +407,21 @@ namespace CLikeCompiler.Libs
             }
             SendFrontMessage("未闭合的字符串", LogMsgItem.Type.ERROR);
             throw new Exception();
-            /*basePos = src.Length;
+            /*basePos = srcArg.Length;
             rearPos = invalid;
             return invalid;*/
         }
 
         private static bool IsNewLine(char c)
         {
-            if (c == newlineNote) { return true; }
+            if (c == NewlineNote) { return true; }
             return false;
         }
 
         private static bool IsWhiteSpace(char c)
         {
-            if (c == ' ' || c == newlineNote) { return true; }
-            return false;
-         }
+            return c is ' ' or NewlineNote;
+        }
 
         private void ClearEvent()
          {

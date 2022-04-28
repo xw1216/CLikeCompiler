@@ -6,7 +6,9 @@
     xmlns:data="using:CLikeCompiler.Libs"
     xmlns:model="using:CLikeCompiler"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:util="using:CLikeCompiler.Libs.Util"
+    xmlns:logItem="using:CLikeCompiler.Libs.Util.LogItem"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     NavigationCacheMode="Required" >
@@ -44,7 +46,7 @@
             </CommandBar.Content>
         </CommandBar>
 
-        <ListView Grid.Row="1" ItemsSource="{x:Bind data:LogUtility.LogDisplayed}"
+        <ListView Grid.Row="1" ItemsSource="{x:Bind util:Logger.LogDisplayed}"
                   HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="14, 14, 14, 14">
             <ListView.ItemContainerTransitions>
                 <TransitionCollection>
@@ -53,11 +55,11 @@
                 </TransitionCollection>
             </ListView.ItemContainerTransitions>
             <ListView.ItemTemplate>
-                <DataTemplate x:DataType="data:LogItem" >
+                <DataTemplate x:DataType="logItem:LogMsgItem" >
                     <StackPanel Orientation="Horizontal" Margin="14, 0, 14, 0">
                         <Grid>
                             <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xF138;" />
-                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="{x:Bind GetServerityFont()}" />
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="{x:Bind GetSeverityFont()}" />
                         </Grid>
                         <StackPanel Margin="14, 0, 0, 0">
                             <TextBlock Text="{x:Bind Content}" Margin="8,0,0,0" Padding="0, 4, 0, 4" 

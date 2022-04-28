@@ -11,24 +11,51 @@ namespace CLikeCompiler.Libs.Runtime
     internal class QuadTable
     {
         private readonly List<Quad> quadList = new();
-        internal int Count
-        {
-            get { return quadList.Count; }
-        }
+        internal int Count => quadList.Count;
+
+        private Quad TempQuad { get; set; } = null;
 
         internal int NextQuadAddr()
         {
             return quadList.Count;
         }
 
-        internal void GenQuad(string name, IRecord lhs, IRecord rhs, IRecord dst)
+        internal Quad NextQuadRef()
         {
-            Quad quad = new();
-            quad.Name = name;
-            quad.Lhs = lhs;
-            quad.Rhs = rhs;
-            quad.Dst = dst;
-            quadList.Add(quad);
+            if (TempQuad is { Name: "" })
+            {
+                return TempQuad;
+            }
+
+            TempQuad = new Quad();
+            return TempQuad;
+        }
+
+        internal Quad GenQuad(string name, IRecord lhs, IRecord rhs, IRecord dst)
+        {
+            if (TempQuad != null)
+            {
+                TempQuad.Name = name;
+                TempQuad.Lhs = lhs;
+                TempQuad.Rhs = rhs;
+                TempQuad.Dst = dst;
+                Quad quad = TempQuad;
+                quadList.Add(TempQuad);
+                TempQuad = null;
+                return quad;
+            }
+            else
+            {
+                Quad quad = new()
+                {
+                    Name = name,
+                    Lhs = lhs,
+                    Rhs = rhs,
+                    Dst = dst
+                };
+                quadList.Add(quad);
+                return quad;
+            }
         }
 
         internal Quad ElemAt(int index)

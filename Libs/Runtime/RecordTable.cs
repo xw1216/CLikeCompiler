@@ -1,43 +1,51 @@
-﻿using CLikeCompiler.Libs.Enum;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using CLikeCompiler.Libs.Enum;
 using CLikeCompiler.Libs.Record.CodeRecord;
 using CLikeCompiler.Libs.Record.DataRecord;
 using CLikeCompiler.Libs.Record.Interface;
-using CLikeCompiler.Libs.Runtime;
 using CLikeCompiler.Libs.Unit.Quad;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace CLikeCompiler.Libs
+namespace CLikeCompiler.Libs.Runtime
 {
     internal class RecordTable
     {
         private FuncRecord mainFunc = null;
 
-        private readonly List<ScopeTable> scopeTables;
+        #region Code Assist Records
         private readonly List<FuncRecord> funcTable;
         private readonly List<LabelRecord> labelTable;
         private readonly List<CallRecord> callTable;
+        #endregion
 
+        #region Data Records
         private readonly ScopeTable consTable;
+        private readonly List<ScopeTable> scopeTables;
         private readonly ScopeTable globalTable;
-
+        #endregion
+        
         private ScopeTable currentTable;
+        private FuncRecord currentFunc;
+
+
+        #region Init
 
         internal RecordTable()
         {
-            scopeTables = new();
-            funcTable = new();
-            labelTable = new();
-            callTable = new();
+            scopeTables = new List<ScopeTable>();
+            funcTable = new List<FuncRecord>();
+            labelTable = new List<LabelRecord>();
+            callTable = new List<CallRecord>();
 
-            consTable = new();
-            globalTable = new();
+            consTable = new ScopeTable();
+            globalTable = new ScopeTable
+            {
+                Parent = null
+            };
 
-            // TODO 检查全局表父指针的必要性
-            globalTable.Parent = globalTable;
             scopeTables.Add(consTable);
             scopeTables.Add(globalTable);
 
@@ -56,8 +64,18 @@ namespace CLikeCompiler.Libs
             globalTable.Clear();
             currentTable = null;
         }
+        
+        #endregion
 
-        // 在本函数内进入新的作用域
+
+        #region Scope Related
+
+        internal bool IsGlobalScope()
+        {
+            return currentTable == globalTable;
+        }
+
+        // 在本函数内进入新的作用域（新建函数时不调用）
         internal ScopeTable EnterScope()
         {
             ScopeTable newTable = new();
@@ -67,16 +85,31 @@ namespace CLikeCompiler.Libs
             return newTable;
         }
 
-        // 离开本函数当前作用域
+        // 离开本函数内的当前作用域
         internal ScopeTable LeaveScope()
         {
-            // TODO 记录函数四元式开始与结束位置
-            if (currentTable == null || currentTable == globalTable)
-            { return globalTable; }
+            if(currentTable == null || currentTable.Parent == null)
+            {
+                throw new ArgumentNullException();
+            }
+
+            if (currentTable == globalTable)
+            {
+                currentFunc = null;
+                return globalTable;
+            }
 
             currentTable = currentTable.Parent;
+            if (currentTable == globalTable)
+            {
+                currentFunc = null;
+            }
             return currentTable;
         }
+
+        #endregion
+
+        #region Label Related
 
         // ------------------------- 跳转标签相关 ---------------------------------
 
@@ -109,6 +142,10 @@ namespace CLikeCompiler.Libs
             return null;
         }
 
+        #endregion
+
+        #region Func Related
+        
         // -------------------------- 函数相关 ---------------------------------
 
         private string GetArgsAbbr(List<VarRecord> args)
@@ -129,22 +166,28 @@ namespace CLikeCompiler.Libs
             FuncRecord func = FindFuncRecord(name, vars);
             if (func != null) { return null; }
 
-            func = new();
-            func.Name = name;
-            func.ReturnType = returnType;
-            func.ArgsList = vars;
+            func = new FuncRecord
+            {
+                Name = name,
+                ReturnType = returnType,
+                ArgsList = vars
+            };
 
             // 设置主入口函数
             if (mainFunc == null && func.Name == "main")
             { mainFunc = func; }
-
+            // 设置函数跳转标签
             LabelRecord label = CreateLabelRecord(quad, "Func_" + name + GetArgsAbbr(vars));
             func.Label = label;
             label.ToQuad = quad;
             if(quad.Label == null) { quad.Label = label; }
-
+            // 设置第一条四元式位置
+            func.QuadStart = quad;
+            // 设置函数作用域
             func.LocalTable.Parent = globalTable;
             globalTable.AddChildTable(func.LocalTable);
+            // 设置当前函数 
+            currentFunc = func;
 
             funcTable.Add(func);
             return func;
@@ -163,9 +206,11 @@ namespace CLikeCompiler.Libs
         internal CallRecord CreateCallRecord(FuncRecord caller, FuncRecord callee)
         {
             if(FindCallRecord(caller, callee) != null) { return null; }
-            CallRecord call = new();
-            call.Caller = caller;
-            call.Callee = callee;
+            CallRecord call = new()
+            {
+                Caller = caller,
+                Callee = callee
+            };
             callTable.Add(call);
             return call;
         }
@@ -182,6 +227,9 @@ namespace CLikeCompiler.Libs
             return null;
         }
 
+        #endregion
+
+        #region Const Related
 
         // ----------------------------- 常量相关 ------------------------------------
 
@@ -204,6 +252,10 @@ namespace CLikeCompiler.Libs
                 case VarType.BOOL:
                     consVar.Val = bool.Parse(cont);
                     return;
+                case VarType.VOID:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(type), type, null);
             }
             throw new Exception();
         }
@@ -231,13 +283,18 @@ namespace CLikeCompiler.Libs
 
         private static void ParseListInput<T>(List<string> strList, List<object> result)
         {
+            if (result == null) throw new ArgumentNullException(nameof(result));
             Type type = typeof(T);
             var parse = type.GetMethod("TryParse");
-            result = new();
+            if (parse == null)
+            {
+                throw new MissingMethodException("");
+            }
+            result = new List<object>();
 
             foreach (string str in strList)
             {
-                var args = new object[] { str, Activator.CreateInstance(type) };
+                var args = new[] { str, Activator.CreateInstance(type) };
                 parse.Invoke(null, args);
                 result.Add((T)args[1]);
             }
@@ -278,16 +335,23 @@ namespace CLikeCompiler.Libs
             return null;
         }
 
+        #endregion
+
+
+        #region Var Related
+
         // ------------------------------ 变量部分 -------------------------------
 
         internal VarRecord CreateLocalVarRecord(string name, VarType type)
         {
             if (IsLocalRecordExist(name))
             {
-                VarRecord record = new();
-                record.Name = name;
-                record.Type = type;
-                record.Pos = RecordPos.MEM;
+                VarRecord record = new()
+                {
+                    Name = name,
+                    Type = type,
+                    Pos = RecordPos.MEM
+                };
                 currentTable.AddRecord(record);
                 return record;
             }
@@ -298,10 +362,12 @@ namespace CLikeCompiler.Libs
         {
             if (IsLocalRecordExist(name))
             {
-                ArrayRecord record = new();
-                record.Name = name;
-                record.Type = type;
-                record.Pos = RecordPos.MEM;
+                ArrayRecord record = new()
+                {
+                    Name = name,
+                    Type = type,
+                    Pos = RecordPos.MEM
+                };
                 record.SetDimList(dimList);
                 currentTable.AddRecord(record);
                 return record;
@@ -309,11 +375,13 @@ namespace CLikeCompiler.Libs
             return null;
         }
 
-        internal VarTempReocrd CreateTempVarRecord(VarType type)
+        internal VarTempRecord CreateTempVarRecord(VarType type)
         {
-            VarTempReocrd record = new();
-            record.Type = type;
-            record.Pos = RecordPos.MEM;
+            VarTempRecord record = new()
+            {
+                Type = type,
+                Pos = RecordPos.MEM
+            };
             currentTable.AddRecord(record);
             return record;
         }
@@ -341,5 +409,7 @@ namespace CLikeCompiler.Libs
                 scope = scope.Parent;
             }
         }
+
+        #endregion
     }
 }

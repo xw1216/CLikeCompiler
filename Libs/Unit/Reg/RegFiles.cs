@@ -13,7 +13,7 @@ namespace CLikeCompiler.Libs.Unit.Reg
 
         internal RegFiles()
         {
-            regs = new();
+            regs = new List<Regs>();
             for (int i = 0; i < regStdList.Count; i++)
             {
                 regs.Add(new Regs(i));

@@ -15,9 +15,9 @@ namespace CLikeCompiler.Libs.Util.LogItem
             ERROR
         }
 
-        public Type Serverity { get; set; }
+        private Type Severity { get; set; }
         public string Content { get; set; }
-        public DateTime Time { get; set; }
+        private DateTime Time { get; set; }
 
         public LogMsgItem()
         {
@@ -27,7 +27,7 @@ namespace CLikeCompiler.Libs.Util.LogItem
         public LogMsgItem(string content, Type type = Type.INFO)
         {
             Content = content;
-            Serverity = type;
+            Severity = type;
             Time = DateTime.Now;
         }
 
@@ -38,14 +38,14 @@ namespace CLikeCompiler.Libs.Util.LogItem
 
         public string GetTipStr()
         {
-            return GetServerityStr() + "  " + Time.ToString("G");
+            return GetSeverityStr() + "  " + Time.ToString("G");
         }
 
-        public string GetServerityFont()
+        public string GetSeverityFont()
         {
 
-            // {x:Bind GetServerityFont()}
-            return Serverity switch
+            // {x:Bind GetSeverityFont()}
+            return Severity switch
             {
                 Type.INFO => "\uF13C",
                 Type.WARN => "\uF142",
@@ -54,9 +54,9 @@ namespace CLikeCompiler.Libs.Util.LogItem
             };
         }
 
-        public string GetServerityStr()
+        public string GetSeverityStr()
         {
-            return Serverity switch
+            return Severity switch
             {
                 Type.INFO => "提示",
                 Type.WARN => "警告",

@@ -22,15 +22,15 @@ namespace CLikeCompiler.Libs.Unit.Analy
 
         internal bool Activate()
         {
-            return detected.Invoke();
+            return Detected != null && Detected.Invoke();
         }
 
         internal void AddHandler(ActionHandler action)
         {
-            detected += action;
+            Detected += action;
         }
 
         internal delegate bool ActionHandler();
-        private event ActionHandler detected;
+        private event ActionHandler Detected;
     }
 }

@@ -11,7 +11,7 @@ namespace CLikeCompiler.Libs.Unit.Analy
     {
         internal Prod prod = null;
         internal Status status = Status.BLANK;
-        internal int[] pos = new int[2] { 0, 0 };
+        internal readonly int[] pos = new int[2] { 0, 0 };
 
         internal enum Status
         {

@@ -15,6 +15,8 @@ using Windows.Foundation;
 using Windows.Foundation.Collections;
 
 using CLikeCompiler.Libs;
+using CLikeCompiler.Libs.Util;
+using CLikeCompiler.Libs.Util.LogItem;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -33,20 +35,20 @@ namespace CLikeCompiler.Pages
 
         private void MoreLogClick(object sender, RoutedEventArgs e)
         {
-            Logger.GetInstance().OpenLogInNotepad();
+            Logger.Instance().OpenLogInNotepad();
             MainWindow.GetInstance().ShowErrorPage("若要继续，请先关闭日志文件。", "提示");
         }
 
         private void ClearLogClick(object sender, RoutedEventArgs e)
         {
-            Logger.GetInstance().ClearDisplayRecord();
+            Logger.Instance().ClearDisplayRecord();
         }
 
         private void TestLogClick(object sender, RoutedEventArgs e)
         {
-            CompilerReportArgs args = new(LogItem.MsgType.WARN, "Test");
-            CompilerReportArgs arg = new(LogItem.MsgType.ERROR, "Test");
-            MainWindow.GetInstance().GetLogger().NewLogRecord("Test", LogItem.MsgType.INFO);
+            LogReportArgs args = new(LogMsgItem.Type.WARN, "Test");
+            LogReportArgs arg = new(LogMsgItem.Type.ERROR, "Test");
+            MainWindow.GetInstance().GetLogger().NewLogRecord("Test", LogMsgItem.Type.INFO);
             MainWindow.GetInstance().server.ReportBackInfo(this, args);
             MainWindow.GetInstance().server.ReportFrontInfo(this, arg);
         }

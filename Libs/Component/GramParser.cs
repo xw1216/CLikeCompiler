@@ -10,13 +10,13 @@ namespace CLikeCompiler.Libs.Component
 {
     public class GramParser
     {
-        private readonly string gram = "Grammar";
+        private const string Gram = "Grammar";
         private string gramSrc;
-        internal bool IsBaseGramReady { private set; get; } = false;
+        internal bool IsBaseGramReady { private set; get; }
 
-        private List<Prod> prods = new List<Prod>();
-        private List<Term> terms = new List<Term>();
-        private List<NTerm> nTerms = new List<NTerm>();
+        private readonly List<Prod> prods = new();
+        private readonly List<Term> terms = new();
+        private readonly List<NTerm> nTerms = new();
 
         private NTerm startNTerm;
 
@@ -56,23 +56,24 @@ namespace CLikeCompiler.Libs.Component
             return startNTerm;
         }
 
-        internal void GetSymbolRefs(ref List<Prod> prods, ref List<Term> terms, ref List<NTerm> nTerms)
+        internal void GetSymbolRefs(ref List<Prod> prod, ref List<Term> term, ref List<NTerm> nTerm)
         {
-            prods = this.prods;
-            terms = this.terms;
-            nTerms = this.nTerms;
+            if (prod == null) throw new ArgumentNullException(nameof(prod));
+            prod = this.prods;
+            term = this.terms;
+            nTerm = this.nTerms;
         }
 
         private void GetGramSrc()
         {
-            gramSrc = Compiler.Instance().GetStrFromResw(gram);
+            gramSrc = Compiler.Instance().GetStrFromResw(Gram);
         }
 
 
         private void RuleParse()
         {
-            terms.Add(Term.end);
-            Term.end.IncRef();
+            terms.Add(Term.End);
+            Term.End.IncRef();
             List<string> rules = new(gramSrc.Replace("\r", "").Split('\n',
                 StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries));
             foreach (string rule in rules)
@@ -86,12 +87,10 @@ namespace CLikeCompiler.Libs.Component
         {
             foreach (Prod prod in prods)
             {
-                if (prod.GetLhs().prodIndex < 0)
-                {
-                    Compiler.Instance().ReportBackInfo(this,
+                if (prod.GetLhs().ProdIndex >= 0) continue;
+                Compiler.Instance().ReportBackInfo(this,
                     new LogReportArgs(LogMsgItem.Type.ERROR, "存在未定义的非终结符：" + prod.GetLhs().GetName()));
-                    throw new Exception();
-                }
+                throw new Exception();
             }
         }
 
@@ -100,25 +99,25 @@ namespace CLikeCompiler.Libs.Component
             if (side.Count != 2)
             {
                 Compiler.Instance().ReportBackInfo(this,
-                    new LogReportArgs(LogMsgItem.Type.ERROR, "文法格式错误" + side.ToString()));
+                    new LogReportArgs(LogMsgItem.Type.ERROR, "文法格式错误" + side));
                 throw new Exception();
             }
-            Prod prod = new Prod();
-            Lhshandler(ref prod, side.First());
+            Prod prod = new();
+            LhsHandler(ref prod, side.First());
             RhsHandler(ref prod, side.Last());
             prods.Add(prod);
         }
 
-        private void Lhshandler(ref Prod prod, string str)
+        private void LhsHandler(ref Prod prod, string str)
         {
             NTerm lhs = CreateGetNTerm(str);
-            lhs.prodIndex = prods.Count;
+            lhs.ProdIndex = prods.Count;
             prod.SetLhs(lhs);
         }
 
         private void RhsHandler(ref Prod prod, string str)
         {
-            StringBuilder builder = new StringBuilder();
+            StringBuilder builder = new();
             prod.NewSubProd();
 
             for (int pos = 0; pos < str.Length; pos++)
@@ -131,12 +130,11 @@ namespace CLikeCompiler.Libs.Component
                 else if (str[pos] == ' ')
                 {
                     builder.Clear();
-                    continue;
                 }
                 else if (str[pos] == '$')
                 {
                     pos = SubNameCut(ref builder, ref str, pos + 1);
-                    if (!Compiler.lex.IsKeyRecog(builder.ToString()))
+                    if (!LexServer.IsKeyRecognize(builder.ToString()))
                     {
                         Compiler.Instance().ReportBackInfo(this,
                         new LogReportArgs(LogMsgItem.Type.ERROR, "无法识别的文法终结符符号"));
@@ -163,13 +161,13 @@ namespace CLikeCompiler.Libs.Component
             }
         }
 
-        private bool IsLetter(char c)
+        private static bool IsLetter(char c)
         {
-            if (c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z') { return true; }
+            if (c is >= 'a' and <= 'z' || c is >= 'A' and <= 'Z') { return true; }
             else { return false; }
         }
 
-        private int SubNameCut(ref StringBuilder builder, ref string str, int pos)
+        private static int SubNameCut(ref StringBuilder builder, ref string str, int pos)
         {
             for (; pos < str.Length; pos++)
             {
@@ -210,10 +208,7 @@ namespace CLikeCompiler.Libs.Component
             }
 
             NTerm newNTerm = new();
-            if (startNTerm == null)
-            {
-                startNTerm = newNTerm;
-            }
+            startNTerm ??= newNTerm;
             newNTerm.SetName(name);
             newNTerm.IncRef();
             nTerms.Add(newNTerm);

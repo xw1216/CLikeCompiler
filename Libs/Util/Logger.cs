@@ -18,44 +18,46 @@ namespace CLikeCompiler.Libs.Util
 
         private StorageFile logFile;
         private readonly SemaphoreSlim semaphore;
-        private static readonly int recDispCnt = 15;
-        private static readonly int logDispCnt = 30;
+        private const int RecDisplayCnt = 15;
+        private const int LogDisplayCnt = 30;
 
-        private static readonly ObservableCollection<LogMsgItem> logDisplayed = new();
-        public static ObservableCollection<LogMsgItem> LogDisplayed { get { return logDisplayed; } }
+        public static ObservableCollection<LogMsgItem> LogDisplayed { get; } = new();
 
-        private static readonly ObservableCollection<LogAnalyItem> actionDisplayed = new();
-        public static ObservableCollection<LogAnalyItem> ActionDisplayed { get { return actionDisplayed; } }
+        public static ObservableCollection<LogAnalyItem> ActionDisplayed { get; } = new();
 
-        public Logger()
+        private Logger()
         {
             semaphore = new SemaphoreSlim(1, 1);
         }
 
         public static void ActionRecordTest()
         {
-            LexUnit unit = new();
-            unit.name = "Test";
-            unit.cont = "Test";
-            NewActionRecord(Term.end, unit, "Action Record Test ................................");
+            LexUnit unit = new()
+            {
+                name = "Test",
+                cont = "Test"
+            };
+            NewActionRecord(Term.End, unit, "Action Record Test ................................");
         }
 
         internal static void NewActionRecord(Symbols sym, LexUnit unit, string msg)
         {
-            LogAnalyItem action = new();
-            action.stackTop = sym;
-            action.inputFirst = unit;
-            action.msg = msg;
-            if (actionDisplayed.Count > recDispCnt)
+            LogAnalyItem action = new()
             {
-                actionDisplayed.RemoveAt(0);
+                stackTop = sym,
+                inputFirst = unit,
+                msg = msg
+            };
+            if (ActionDisplayed.Count > RecDisplayCnt)
+            {
+                ActionDisplayed.RemoveAt(0);
             }
-            actionDisplayed.Add(action);
+            ActionDisplayed.Add(action);
         }
 
         public static void ClearActionRecord()
         {
-            actionDisplayed.Clear();
+            ActionDisplayed.Clear();
         }
 
         public void Initialize()
@@ -81,7 +83,7 @@ namespace CLikeCompiler.Libs.Util
         {
             RemoveOverflowRecord();
             LogMsgItem item = new(msg, type);
-            logDisplayed.Add(item);
+            LogDisplayed.Add(item);
             ExportRecordToFile(item);
         }
 
@@ -96,7 +98,7 @@ namespace CLikeCompiler.Libs.Util
 
         private async void ExportRecordToFile(LogMsgItem item)
         {
-            string logLine = item.GetTimeStr() + " [" + item.GetServerityStr() + "] : " + item.Content + "\n";
+            string logLine = item.GetTimeStr() + " [" + item.GetSeverityStr() + "] : " + item.Content + "\n";
             await semaphore.WaitAsync();
             await FileIO.AppendTextAsync(logFile, logLine);
             semaphore.Release();
@@ -104,20 +106,20 @@ namespace CLikeCompiler.Libs.Util
 
         private void RemoveOverflowRecord()
         {
-            if (logDisplayed.Count > logDispCnt)
+            if (LogDisplayed.Count > LogDisplayCnt)
             {
-                logDisplayed.Remove(logDisplayed.First());
+                LogDisplayed.Remove(LogDisplayed.First());
             }
         }
 
         public void ClearDisplayRecord()
         {
-            logDisplayed.Clear();
+            LogDisplayed.Clear();
         }
 
         public static bool IsLogEmpty()
         {
-            if (logDisplayed == null || logDisplayed.Count > 0)
+            if (LogDisplayed == null || LogDisplayed.Count > 0)
             {
                 return true;
             }

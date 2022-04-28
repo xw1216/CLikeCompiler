@@ -13,12 +13,12 @@ namespace CLikeCompiler.Libs.Runtime
         internal List<ScopeTable> Children = new();
 
         private readonly List<IDataRecord> records = new();
-        internal int Count { get { return records.Count; } }
+        internal int Count => records.Count;
 
         internal IDataRecord this[int i]
         {
-            get { return records[i]; }
-            set { records[i] = value; }
+            get => records[i];
+            set => records[i] = value;
         }
 
         internal void Clear()

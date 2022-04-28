@@ -1,18 +1,16 @@
-﻿using CLikeCompiler.Libs.Unit.Analy;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using CLikeCompiler.Libs.Runtime;
+using CLikeCompiler.Libs.Unit.Analy;
 using CLikeCompiler.Libs.Unit.Prods;
 using CLikeCompiler.Libs.Unit.Symbol;
 using CLikeCompiler.Libs.Util;
 using CLikeCompiler.Libs.Util.LogItem;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
-namespace CLikeCompiler.Libs
+namespace CLikeCompiler.Libs.Component
 {
-
-
-
     internal class GramServer
     {
         private List<Prod> prods;
@@ -26,9 +24,9 @@ namespace CLikeCompiler.Libs
 
         private LexUnit lastInput;
 
-        internal bool IsGramReady { get; private set; } = false;
+        private bool IsGramReady { get; set; } = false;
 
-        private readonly string endStr = "end";
+        internal readonly string endStr = "end";
 
         internal void ResetGramServer()
         {
@@ -57,20 +55,18 @@ namespace CLikeCompiler.Libs
 
         internal void BuildGram()
         {
-            if(!IsGramReady)
-            {
-                GetParserResult();
-                RemoveLeftRecur();
-                PrefixFactoring();
-                CalcuAllFirstAndFollow();
-                PrintGrammar();
-                PrintFirstAndFollow();
-                BuildPredictTable();
-                IsGramReady = true;
-            }
+            if (IsGramReady) return;
+            GetParserResult();
+            RemoveLeftRecur();
+            PrefixFactoring();
+            CalcuAllFirstAndFollow();
+            PrintGrammar();
+            PrintFirstAndFollow();
+            BuildPredictTable();
+            IsGramReady = true;
         }
 
-        internal void PrintGrammar()
+        private void PrintGrammar()
         {
             foreach(Prod prod in prods)
             {
@@ -78,7 +74,7 @@ namespace CLikeCompiler.Libs
             }
         }
 
-        internal void PrintFirstAndFollow()
+        private void PrintFirstAndFollow()
         {
             foreach(NTerm nTerm in nTerms)
             {
@@ -95,7 +91,7 @@ namespace CLikeCompiler.Libs
             }
         }
 
-        internal void CalcuAllFirstAndFollow()
+        private void CalcuAllFirstAndFollow()
         {
             foreach (NTerm nTerm in nTerms)
             {
@@ -104,7 +100,7 @@ namespace CLikeCompiler.Libs
             }
         }
 
-        private void SetStrBuilder(List<Term> set, StringBuilder builder)
+        private static void SetStrBuilder(IReadOnlyList<Term> set, StringBuilder builder)
         {
             builder.Clear();
             builder.Append('\t');
@@ -132,7 +128,7 @@ namespace CLikeCompiler.Libs
 
         private void RecordTermsName()
         {
-            termsName = new();
+            termsName = new List<string>();
             foreach(Term term in terms)
             {
                 termsName.Add(term.GetName());
@@ -151,12 +147,12 @@ namespace CLikeCompiler.Libs
                 {
                     List<Symbols> sub = rhs[j];
                     List<Term> first = CalcuFirst(sub, prod.GetLhs());
-                    if(first.Contains(Term.blank))
+                    if(first.Contains(Term.Blank))
                     {
                         List<Term> follow = CalcuFollow(prod.GetLhs());
                         AddSetUnique(ref first, ref follow);
                     }
-                    first.Remove(Term.blank);
+                    first.Remove(Term.Blank);
                     InsertTableItem(prod.GetLhs(), sub, first, i, j);
                 }
                 InsertSynchItem(prod.GetLhs());
@@ -184,9 +180,8 @@ namespace CLikeCompiler.Libs
             prod.AddSubProd(rhs);
             int x = nTerms.IndexOf(lhs);
 
-            for (int i = 0; i < list.Count; i++)
+            foreach (var term in list)
             {
-                Term term = list[i];
                 int y = terms.IndexOf(term);
                 if (x < 0 || x >= nTerms.Count || y < 0 || y > terms.Count)
                 {
@@ -195,16 +190,16 @@ namespace CLikeCompiler.Libs
 
                 if (table[x, y].IsBlank())
                 {
-                        table[x, y].status = PredictTableItem.Status.FILL;
-                        table[x, y].prod = prod;
-                        table[x, y].pos[0] = prodIndex;
-                        table[x, y].pos[1] = subIndex;
+                    table[x, y].status = PredictTableItem.Status.FILL;
+                    table[x, y].prod = prod;
+                    table[x, y].pos[0] = prodIndex;
+                    table[x, y].pos[1] = subIndex;
                 }
                 else
                 {
                     Compiler.Instance().ReportBackInfo(this,
-                                        new LogReportArgs(LogMsgItem.Type.ERROR,
-                                        $"预测表入口冲突：非终结符 {lhs.GetName()} , 终结符 {term.GetName()}"));
+                        new LogReportArgs(LogMsgItem.Type.ERROR,
+                            $"预测表入口冲突：非终结符 {lhs.GetName()} , 终结符 {term.GetName()}"));
                     throw new InvalidOperationException();
                 }
             }
@@ -217,8 +212,10 @@ namespace CLikeCompiler.Libs
             {
                 for(int j = 0; j < table.GetLength(1); j++)
                 {
-                    table[i, j] = new PredictTableItem();
-                    table[i, j].status = PredictTableItem.Status.BLANK;
+                    table[i, j] = new PredictTableItem
+                    {
+                        status = PredictTableItem.Status.BLANK
+                    };
                 }
             }
         }
@@ -238,13 +235,13 @@ namespace CLikeCompiler.Libs
 
         private void RemoveUnusedProd()
         {
-            List<NTerm> findSet = FindUnreachNTerm();
+            IEnumerable<NTerm> findSet = FindUnreachableNTerm();
 
             List<NTerm> unused = new(nTerms.Except(findSet));
             foreach(NTerm nTerm in unused)
             {
                 DecSymbolRef(nTerm);
-                Prod prod = prods[nTerm.prodIndex];
+                Prod prod = prods[nTerm.ProdIndex];
                 foreach(List<Symbols> list in prod.GetRhs())
                 {
                     DecSeqRef(list);
@@ -253,11 +250,9 @@ namespace CLikeCompiler.Libs
             for (int i = 0; i < prods.Count; i++)
             {
                 Prod prod = prods[i];
-                if (unused.Contains(prod.GetLhs()))
-                {
-                    prods.Remove(prod);
-                    i--;
-                }
+                if (!unused.Contains(prod.GetLhs())) continue;
+                prods.Remove(prod);
+                i--;
             }
             ReNoteNTermIndex();
         }
@@ -266,11 +261,11 @@ namespace CLikeCompiler.Libs
         {
             for(int i = 0; i < prods.Count; i++)
             {
-                prods[i].GetLhs().prodIndex = i;
+                prods[i].GetLhs().ProdIndex = i;
             }
         }
 
-        private List<NTerm> FindUnreachNTerm()
+        private IEnumerable<NTerm> FindUnreachableNTerm()
         {
             List<NTerm> findSet = new();
             Queue<NTerm> bfsQueue = new();
@@ -280,7 +275,7 @@ namespace CLikeCompiler.Libs
             {
                 NTerm nTerm = bfsQueue.Dequeue();
                 findSet.Add(nTerm);
-                Prod prod = prods[nTerm.prodIndex];
+                Prod prod = prods[nTerm.ProdIndex];
                 foreach (List<Symbols> list in prod.GetRhs())
                 {
                     foreach (Symbols sym in list)
@@ -308,7 +303,7 @@ namespace CLikeCompiler.Libs
                 {
                     // Store Y and remove Ai -> AjY
                     List<Symbols> latter;
-                    if (dstSub.Count == 1) { latter = new(); }
+                    if (dstSub.Count == 1) { latter = new List<Symbols>(); }
                     else 
                     {
                         latter = dstSub.GetRange(1, dstSub.Count - 1); 
@@ -330,7 +325,7 @@ namespace CLikeCompiler.Libs
             }
         }
 
-        private void IncSymbolRef(Symbols sym)
+        private static void IncSymbolRef(Symbols sym)
         {
             if(sym == null) { return; }
             sym.IncRef();
@@ -360,7 +355,7 @@ namespace CLikeCompiler.Libs
             }
         }
 
-        private void AddSetUnique(ref List<Term> set, Symbols sym)
+        private static void AddSetUnique(ref List<Term> set, Symbols sym)
         {
             if (sym.IsTerm() || sym.IsBlank())
             {
@@ -378,7 +373,7 @@ namespace CLikeCompiler.Libs
         {
             NTerm newNTerm = new();
             newNTerm.SetName(name);
-            newNTerm.prodIndex = prods.Count;
+            newNTerm.ProdIndex = prods.Count;
             nTerms.Add(newNTerm);
             IncSymbolRef(newNTerm);
             return newNTerm;
@@ -452,14 +447,14 @@ namespace CLikeCompiler.Libs
                 NTerm nTerm = (NTerm)sym;
                 if (nTerm.first.Count > 0) { return new(nTerm.first); }
                 // Find the corresponding Production
-                Prod prod = prods[nTerm.prodIndex];
+                Prod prod = prods[nTerm.ProdIndex];
                 // Check every sub production
                 foreach (List<Symbols> sub in prod.GetRhs()) 
                 { 
                     // sym -> epsilon then add epsilon to first
                     if(sub.Count == 0) 
                     { 
-                        AddSetUnique(ref nTerm.first, Term.blank); 
+                        AddSetUnique(ref nTerm.first, Term.Blank); 
                     } 
                     else
                     {
@@ -493,7 +488,7 @@ namespace CLikeCompiler.Libs
             List<Term> first = new();
             if(list.Count == 0) 
             { 
-                AddSetUnique(ref first , Term.blank); 
+                AddSetUnique(ref first , Term.Blank); 
                 return first; 
             }
 
@@ -503,7 +498,7 @@ namespace CLikeCompiler.Libs
                 // No left recurrsion so no infinity loop
                 List<Term> subFirst = CalcuFirst(sym);
                 // If sub First do not contains epsilon , break and return
-                if(!(subFirst.Contains(Term.blank)))
+                if(!(subFirst.Contains(Term.Blank)))
                 {
                     AddSetUnique(ref first, ref subFirst);
                     break;
@@ -512,7 +507,7 @@ namespace CLikeCompiler.Libs
                 else
                 {
                     // Caution: the the First of last symbol should not remove epsilon
-                    if(sym != list.Last()) { subFirst.Remove(Term.blank); }
+                    if(sym != list.Last()) { subFirst.Remove(Term.Blank); }
                     AddSetUnique(ref first, ref subFirst);
                     continue;
                 }
@@ -537,7 +532,7 @@ namespace CLikeCompiler.Libs
             if(sym.follow.Count > 0) { return new(sym.follow); }
             if(sym == Compiler.parser.GetStartNTerm())
             {
-                sym.follow.Add(Term.end);
+                sym.follow.Add(Term.End);
             }
             foreach(Prod prod in prods)
             {
@@ -549,9 +544,9 @@ namespace CLikeCompiler.Libs
                         {
                             List<Term> seqFirst = CalcuFirst(GetSubProdRemain(list, i), prod.GetLhs());
                             // First(b) contains epsilon add First(b) - {epsilon} and Follow(lhs) to Follow(sym)
-                            if (seqFirst.Contains(Term.blank))
+                            if (seqFirst.Contains(Term.Blank))
                             {
-                                seqFirst.Remove(Term.blank);
+                                seqFirst.Remove(Term.Blank);
                                 AddSetUnique(ref sym.follow , ref seqFirst);
                                 // Prevent right recurrsion
                                 if(sym != prod.GetLhs())
@@ -609,7 +604,7 @@ namespace CLikeCompiler.Libs
             if(shared.Count == 0) { return; }
             NTerm newNTerm = new();
             newNTerm.SetName(prod.GetLhs().GetName() + "~");
-            newNTerm.prodIndex = prods.Count;
+            newNTerm.ProdIndex = prods.Count;
             nTerms.Add(newNTerm);
 
             Prod newProd = new Prod();
@@ -744,7 +739,7 @@ namespace CLikeCompiler.Libs
 
                     // Prevent replace recurssion
                     if (replaceSym == prod.GetLhs()) { continue; }
-                    List<List<Symbols>> replaceRhs = prods[replaceSym.prodIndex].GetRhs();
+                    List<List<Symbols>> replaceRhs = prods[replaceSym.ProdIndex].GetRhs();
                     List<Symbols> remain = rhs[i].GetRange(index + 1, rhs[i].Count - index - 1);
 
                     // Concat two seq
@@ -780,7 +775,7 @@ namespace CLikeCompiler.Libs
 
         private void InitAnalyStack()
         {
-            stack.Push(Term.end, new DynamicProperty());
+            stack.Push(Term.End, new DynamicProperty());
             stack.Push(Compiler.parser.GetStartNTerm(), new DynamicProperty());
         }
 
@@ -819,7 +814,7 @@ namespace CLikeCompiler.Libs
         private bool GramAnalyTermHandler(LexUnit input, Symbols top, ref bool IsNext, ref bool IsEnd)
         {
             // Analysis Success.
-            if (top == Term.end && IsTopInputMatch(top, input)) 
+            if (top == Term.End && IsTopInputMatch(top, input)) 
             {
                 Logger.NewActionRecord(top, input, "分析完成");
                 IsNext = false;

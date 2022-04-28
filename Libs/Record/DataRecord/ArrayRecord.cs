@@ -19,7 +19,7 @@ namespace CLikeCompiler.Libs.Record.DataRecord
         private List<int> dimList = new();
 
         public string Name { get; set; } = "";
-        public int Width { get { return IDataRecord.GetWidth(Type); } }
+        public int Width => IDataRecord.GetWidth(Type);
         public VarType Type { get; set; }
         public RecordPos Pos { get; set; }
         public int Offset { get; set; }

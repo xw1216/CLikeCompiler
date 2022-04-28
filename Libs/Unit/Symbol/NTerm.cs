@@ -13,7 +13,7 @@ namespace CLikeCompiler.Libs.Unit.Symbol
             this.SetForm(Type.NONTERM);
         }
 
-        internal int prodIndex { get; set; } = -1;
+        internal int ProdIndex { get; set; } = -1;
 
         internal List<Term> first = new();
         internal List<Term> follow = new();
@@ -21,7 +21,7 @@ namespace CLikeCompiler.Libs.Unit.Symbol
 
         internal bool IsNullable()
         {
-            return first.Contains(Term.blank);
+            return first.Contains(Term.Blank);
         }
 
         internal bool IsFirstFollowCross()

@@ -10,7 +10,7 @@ namespace CLikeCompiler.Libs.Unit.Analy
     {
         internal enum Type
         {
-            ID, KEYWD, OP,
+            ID, KEYWORD, OP,
             INT, DEC, STR,
             CH, END
         }

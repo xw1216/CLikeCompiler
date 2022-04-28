@@ -8,21 +8,22 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CLikeCompiler.Libs.Unit.Quad;
 
 namespace CLikeCompiler.Libs.Record.CodeRecord
 {
     internal class FuncRecord : IRecord
     {
-        internal static readonly int DWORD = 8;
-        internal static readonly int SAVE_BASE_LEN = 16;
+        internal const int Dword = 8;
+        internal const int SaveBaseLen = 16;
 
         public string Name { get; set; } = "";
         internal VarType ReturnType { get; set; }
         internal LabelRecord Label { get; set; }
-        internal ScopeTable LocalTable { get; set; } = new();
+        internal ScopeTable LocalTable { get; } = new();
 
-        internal int QuadStartIndex { get; set; } = 0;
-        internal int QuadEndIndex { get; set; } = 0;
+        internal Quad QuadStart { get; set; } = null;
+        internal Quad QuadEnd { get; set; } = null;
 
         // 经过寄存器分配后 函数实际使用的寄存器
         internal List<Regs> UsedRegList { get; set; }
@@ -31,9 +32,10 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
         // 局部变量总长度
         internal int VarLength { get; private set; } = 0;
         // 保存寄存器总长度（含返回地址与 old fp)
-        internal int SaveLength { get; private set; } = SAVE_BASE_LEN;
+        internal int SaveLength { get; private set; } = SaveBaseLen;
         // 栈帧长度
-        internal int FrameLength { get { return VarLength + SaveLength; } }
+        internal int FrameLength => VarLength + SaveLength;
+
         // 参数总长度
         internal int ArgLength { get; private set; } = 0;
         private List<VarRecord> argsList;
@@ -91,7 +93,6 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
         {
             ArgLength = 0;
 
-            int vagancy;
             for (int i = 0; i < argsList.Count; i++)
             {
                 LocalTable.AddRecord(argsList[i]);
@@ -107,9 +108,10 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
                 }
 
                 // 地址对齐
-                if ((vagancy = ArgLength % argsList[i].Width) != 0)
+                int vacancy;
+                if ((vacancy = ArgLength % argsList[i].Width) != 0)
                 {
-                    ArgLength += argsList[i].Width - vagancy;
+                    ArgLength += argsList[i].Width - vacancy;
                 }
                 argsList[i].Offset = ArgLength;
 
@@ -126,7 +128,7 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
         private void CalcuSavePlace()
         {
             SaveRegList = RegFiles.CalcuCalleeSaveList(this);
-            SaveLength = SaveRegList.Count * DWORD + SAVE_BASE_LEN;
+            SaveLength = SaveRegList.Count * Dword + SaveBaseLen;
         }
 
         /// <summary>
@@ -134,7 +136,7 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
         /// </summary>
         /// <param name="queue">变量队列</param>
         /// <param name="table">函数起始变量表</param>
-        private void ScopeSortRecur(List<ScopeTable> queue, ScopeTable table)
+        private static void ScopeSortRecur(ICollection<ScopeTable> queue, ScopeTable table)
         {
             if (table == null) { return; }
             queue.Add(table);
@@ -156,9 +158,8 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
             List<IDataRecord> localVars = new();
             ScopeSortRecur(queue, LocalTable);
 
-            for(int i = 0; i < queue.Count; i++)
+            foreach (var table in queue)
             {
-                ScopeTable table = queue[i];
                 for(int j = 0; j < table.Count; j++)
                 {
                     localVars.Add(table[j]);
@@ -166,11 +167,9 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
             }
 
             int offset = -SaveLength;
-            int vacancy = 0;
-            for(int i = 0; i < localVars.Count; i++)
+            foreach (var data in localVars)
             {
-                IDataRecord data = localVars[i];
-                
+                int vacancy;
                 if((vacancy = Math.Abs(offset % data.Width)) != 0)
                 {
                     offset -= (data.Width - vacancy);
@@ -179,6 +178,8 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
                 data.Pos = RecordPos.MEM;
                 data.Offset = offset;
             }
+
+            ArgLength = Math.Abs(offset) - SaveLength;
         }
     }
 }

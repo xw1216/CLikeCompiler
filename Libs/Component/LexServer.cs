@@ -1,15 +1,15 @@
-﻿using CLikeCompiler.Libs.Unit.Analy;
-using CLikeCompiler.Libs.Util.LogItem;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using CLikeCompiler.Libs.Unit.Analy;
+using CLikeCompiler.Libs.Util.LogItem;
 
-namespace CLikeCompiler.Libs
+namespace CLikeCompiler.Libs.Component
 {
     internal class LexServer
     {
-        private static Dictionary<string, string> keywords = new Dictionary<string, string>() {
+        private static readonly Dictionary<string, string> keywords = new() {
             { "", "blank"}, {"true","true"}, {"false", "false" }, {"void","void" },
             {"int","int"}, {"long","long" }, {"float","float" }, {"double","double" },
             { "bool","bool" }, {"string","string" }, {"if","if" }, {"else","else" },
@@ -18,7 +18,7 @@ namespace CLikeCompiler.Libs
             {"char", "char"}
         };
 
-        private static Dictionary<string, string> operators = new Dictionary<string, string>()
+        private static readonly Dictionary<string, string> operators = new()
         {
             {"=","assign" }, {"+","plus" }, {"-","sub" }, {"*","mul" }, 
             {"/","div" }, {"==","eq" }, {"!=","neq" }, {"<=","leq" }, 
@@ -28,7 +28,7 @@ namespace CLikeCompiler.Libs
             {"[","lsbrc" }, {"]","rsbrc" },{":","colon" }
         };
 
-        private static List<string> constants = new()
+        private static readonly List<string> constants = new()
         {
             "id",
             "integer",
@@ -39,11 +39,11 @@ namespace CLikeCompiler.Libs
 
         private readonly LexUnit endUnit = new();
 
-        private readonly char newlineNote = '\n';
-        private readonly char whiteNote = ' ';
-        private readonly char stringNote = '"';
-        private readonly char charNote = '\'';
-        private readonly char dotNote = '.';
+        private const char NewlineNote = '\n';
+        private const char WhiteNote = ' ';
+        private const char StringNote = '"';
+        private const char CharNote = '\'';
+        private const char DotNote = '.';
 
         private string src = "";
         private bool isEnd;
@@ -61,15 +61,15 @@ namespace CLikeCompiler.Libs
             endUnit.line = 0;
         }
 
-        internal void SetSrc(ref string src)
+        internal void SetSrc(ref string srcArg)
         {
-            this.src = src;
-            endUnit.line = src.Count(IsNewLine);
+            this.src = srcArg;
+            endUnit.line = srcArg.Count(IsNewLine);
         }
 
-        private bool IsNewLine(char c)
+        private static bool IsNewLine(char c)
         {
-            return c == newlineNote;
+            return c == NewlineNote;
         }
 
         public void ResetLex()
@@ -83,7 +83,7 @@ namespace CLikeCompiler.Libs
 
         internal bool GetUnit(out LexUnit unit)
         {
-            unit = new();
+            unit = new LexUnit();
             if(isEnd || src.Length == 0) 
             {
                 unit = endUnit;
@@ -93,7 +93,7 @@ namespace CLikeCompiler.Libs
             return StartLexStep(ref unit);
         }
 
-        internal bool IsKeyRecog(string str)
+        internal static bool IsKeyRecognize(string str)
         {
             return  (keywords.ContainsValue(str) || operators.ContainsValue(str) ||
                 constants.Contains(str));
@@ -105,14 +105,14 @@ namespace CLikeCompiler.Libs
             for(; basePos < src.Length; basePos++, rearPos++)
             {
                 if(src[basePos] == 0) { unit = endUnit;  return false; }
-                else if(src[basePos] == newlineNote) { linePos++; continue; }
-                else if(src[basePos] == whiteNote) { continue; }
-                else if(src[basePos] == stringNote) 
+                else if(src[basePos] == NewlineNote) { linePos++; continue; }
+                else if(src[basePos] == WhiteNote) { continue; }
+                else if(src[basePos] == StringNote) 
                 {
                     StringHandler(ref unit);
                     return !isEnd;
                 } 
-                else if(src[basePos] == charNote)
+                else if(src[basePos] == CharNote)
                 {
                     CharHandler(ref unit); 
                     return !isEnd;
@@ -124,12 +124,12 @@ namespace CLikeCompiler.Libs
                 } 
                 else if(IsIdentifierChar(src[basePos]))
                 {
-                    IdHanlder(ref unit);
+                    IdHandler(ref unit);
                     return !isEnd;
                 } 
                 else
                 {
-                    if(OpratorHandler(ref unit))
+                    if(OperatorHandler(ref unit))
                     {
                         return !isEnd;
                     }
@@ -146,18 +146,18 @@ namespace CLikeCompiler.Libs
         {
             for (; rearPos < src.Length; rearPos++)
             {
-                if (src[rearPos] == charNote)
+                if (src[rearPos] == CharNote)
                 {
                     unit.type = LexUnit.Type.CH;
                     unit.name = "ch";
                     unit.cont = src.Substring(basePos, rearPos - basePos + 1);
-                    RemoveBesetNote(unit.cont, charNote);
+                    RemoveBesetNote(unit.cont, CharNote);
                     unit.line = linePos;
                     rearPos++;
                     UpdatePosHandlerEnd();
                     return;
                 }
-                else if (src[rearPos] == newlineNote)
+                else if (src[rearPos] == NewlineNote)
                 {
                     linePos++;
                 }
@@ -166,41 +166,37 @@ namespace CLikeCompiler.Libs
             throw new Exception();
         }
 
-        private bool OpratorHandler(ref LexUnit unit) 
+        private bool OperatorHandler(ref LexUnit unit) 
         {
-            char first = src[basePos], last;
+            char first = src[basePos];
             StringBuilder builder = new();
             builder.Append(first);
-            if(IsOprators(builder.ToString(), out string valueA))
+            if (!IsOperators(builder.ToString(), out string valueA)) return false;
+            unit.type = LexUnit.Type.OP;
+            unit.line = linePos;
+            if (rearPos < src.Length)
             {
-                unit.type = LexUnit.Type.OP;
-                unit.line = linePos;
-                if (rearPos < src.Length)
+                char last = src[rearPos];
+                StringBuilder inBuilder = new();
+                inBuilder.Append(first);
+                inBuilder.Append(last);
+                if(IsOperators(inBuilder.ToString(), out string valueB))
                 {
-                    last = src[rearPos];
-                    StringBuilder inBuilder = new();
-                    inBuilder.Append(first);
-                    inBuilder.Append(last);
-                    if(IsOprators(inBuilder.ToString(), out string valueB))
-                    {
-                        unit.name = valueB;
-                        unit.cont = inBuilder.ToString();
-                        rearPos += 1;
-                        UpdatePosHandlerEnd();
-                        return true;
-                    }
+                    unit.name = valueB;
+                    unit.cont = inBuilder.ToString();
+                    rearPos += 1;
+                    UpdatePosHandlerEnd();
+                    return true;
                 }
-                unit.name = valueA;
-                unit.cont = builder.ToString();
-                UpdatePosHandlerEnd();
-                return true;
             }
-            return false;
+            unit.name = valueA;
+            unit.cont = builder.ToString();
+            UpdatePosHandlerEnd();
+            return true;
         }
 
-        private void IdHanlder(ref LexUnit unit)
+        private void IdHandler(ref LexUnit unit)
         {
-            string cont;
             for (; rearPos < src.Length; rearPos++)
             {
                 if(!(IsIdentifierChar(src[rearPos])))
@@ -209,10 +205,10 @@ namespace CLikeCompiler.Libs
                 }
             }
 
-            cont = src.Substring(basePos, rearPos - basePos);
+            string cont = src.Substring(basePos, rearPos - basePos);
             if(IsKeyword(ref cont, out string type))
             {
-                unit.type = LexUnit.Type.KEYWD;
+                unit.type = LexUnit.Type.KEYWORD;
                 unit.name = type;
                 unit.cont = type;
             } else
@@ -223,22 +219,20 @@ namespace CLikeCompiler.Libs
             }
             unit.line = linePos;
             UpdatePosHandlerEnd();
-            return;
         }
 
         private void NumberHandler(ref LexUnit unit)
         {
-            string num;
             for(; rearPos < src.Length; rearPos++)
             {
-                if(!(src[rearPos] == dotNote || IsNumber(src[rearPos])))
+                if(!(src[rearPos] == DotNote || IsNumber(src[rearPos])))
                 {
                     break;
                 }
             }
-            num = src.Substring(basePos, rearPos - basePos);
+            string num = src.Substring(basePos, rearPos - basePos);
             unit.cont = num;
-            if (num.Contains(dotNote)) 
+            if (num.Contains(DotNote)) 
             { 
                 unit.type = LexUnit.Type.DEC;
                 unit.name = "decimal";
@@ -251,33 +245,33 @@ namespace CLikeCompiler.Libs
             unit.line = linePos;
 
             UpdatePosHandlerEnd();
-            return;
         }
 
         private void StringHandler(ref LexUnit unit)
         {
             for(; rearPos < src.Length; rearPos++)
             {
-                if(src[rearPos] == stringNote)
+                switch (src[rearPos])
                 {
-                    unit.type = LexUnit.Type.STR;
-                    unit.name = "str";
-                    unit.cont = src.Substring(basePos, rearPos - basePos + 1);
-                    RemoveBesetNote(unit.cont, stringNote);
-                    unit.line = linePos;
-                    rearPos++;
-                    UpdatePosHandlerEnd();
-                    return;
-                } else if(src[rearPos] == newlineNote)
-                {
-                    linePos++;
+                    case StringNote:
+                        unit.type = LexUnit.Type.STR;
+                        unit.name = "str";
+                        unit.cont = src.Substring(basePos, rearPos - basePos + 1);
+                        RemoveBesetNote(unit.cont, StringNote);
+                        unit.line = linePos;
+                        rearPos++;
+                        UpdatePosHandlerEnd();
+                        return;
+                    case NewlineNote:
+                        linePos++;
+                        break;
                 }
             }
             SendFrontMessage("未闭合的字符串", LogMsgItem.Type.ERROR);
             throw new Exception();
         }
 
-        private string RemoveBesetNote(string str, char ch)
+        private static string RemoveBesetNote(string str, char ch)
         {
             if(str.First() == ch) { str = str.Remove(0, 1); }
             if(str.Last() == ch) { str = str.Remove(str.Length - 1 , 1); }
@@ -305,7 +299,7 @@ namespace CLikeCompiler.Libs
             return (IsAlphabet(c) || IsNumber(c) || c == '_');
         }
 
-        private bool IsKeyword(ref string key, out string value)
+        private static bool IsKeyword(ref string key, out string value)
         {
             bool isIn = keywords.ContainsKey(key);
             if(isIn)
@@ -319,7 +313,7 @@ namespace CLikeCompiler.Libs
             }
         }
 
-        private bool IsOprators(string key, out string value)
+        private static bool IsOperators(string key, out string value)
         {
             bool isIn = operators.ContainsKey(key);
             if (isIn)
@@ -334,14 +328,14 @@ namespace CLikeCompiler.Libs
             }
         }
 
-        private bool IsNumber(char c)
+        private static bool IsNumber(char c)
         {
-            return c >= '0' && c <= '9';
+            return c is >= '0' and <= '9';
         }
 
-        private bool IsAlphabet(char c)
+        private static bool IsAlphabet(char c)
         {
-            return (c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z');
+            return (c is >= 'A' and <= 'Z' || c is >= 'a' and <= 'z');
         }
 
         private void SendFrontMessage(string msg, LogMsgItem.Type type)
