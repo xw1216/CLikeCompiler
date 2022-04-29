@@ -53,7 +53,7 @@ namespace CLikeCompiler.Libs.Unit.Analy
             else
             {
                 result = null;
-                return false;
+                throw new ArgumentException("不存在具有该名称的成员");
             }
         }
 

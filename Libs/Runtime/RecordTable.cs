@@ -29,6 +29,7 @@ namespace CLikeCompiler.Libs.Runtime
         
         private ScopeTable currentTable;
         private FuncRecord currentFunc;
+        private bool isFuncScopeSkip = false;
 
 
         #region Init
@@ -78,6 +79,11 @@ namespace CLikeCompiler.Libs.Runtime
         // 在本函数内进入新的作用域（新建函数时不调用）
         internal ScopeTable EnterScope()
         {
+            if (isFuncScopeSkip)
+            {
+                isFuncScopeSkip = false;
+                return currentTable;
+            }
             ScopeTable newTable = new();
             currentTable.AddChildTable(newTable);
             newTable.Parent = currentTable;
@@ -115,20 +121,26 @@ namespace CLikeCompiler.Libs.Runtime
 
         internal LabelRecord CreateLabelRecord(Quad quad, string name)
         {
-            foreach (LabelRecord item in labelTable)
+            if (FindLabelRecord(name) != null)
             {
-                if (item.Name == name) { return null; }
+                return null;
             }
             LabelRecord label = new(quad, name);
             if(quad == null ) { quad.Label = label; }
+            label.ToQuad = quad;
             labelTable.Add(label);
             return label;
         }
 
         internal LabelRecord CreateTmpLabelRecord(Quad quad)
         {
+            if (quad.Label != null)
+            {
+                return quad.Label;
+            }
             LabelRecord tmpLabel = new(quad, LabelRecord.GetTmpLabelName());
-            if (quad == null) { quad.Label = tmpLabel; }
+            quad.Label = tmpLabel;
+            tmpLabel.ToQuad = quad;
             labelTable.Add(tmpLabel);
             return tmpLabel;
         }
@@ -173,6 +185,7 @@ namespace CLikeCompiler.Libs.Runtime
                 ArgsList = vars
             };
 
+            isFuncScopeSkip = true;
             // 设置主入口函数
             if (mainFunc == null && func.Name == "main")
             { mainFunc = func; }
