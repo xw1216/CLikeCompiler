@@ -10,12 +10,19 @@ namespace CLikeCompiler.Libs.Record.DataRecord
 {
     internal class ImmRecord : IRecord
     {
+        public string Name { get; set; }
+
+        internal long Value { get; set; }
+
+        public ImmRecord(string name, long num)
+        {
+            Name = name;
+            Value = num;
+        }
+        
         public RecordType GetRecordType()
         {
             return RecordType.IMM;
         }
-        public string Name { get; set; }
-
-        internal long Value { get; set; }
     }
 }

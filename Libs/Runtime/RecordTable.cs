@@ -71,6 +71,11 @@ namespace CLikeCompiler.Libs.Runtime
 
         #region Scope Related
 
+        internal FuncRecord GetFuncRecord()
+        {
+            return currentFunc;
+        }
+
         internal bool IsGlobalScope()
         {
             return currentTable == globalTable;
@@ -173,8 +178,19 @@ namespace CLikeCompiler.Libs.Runtime
             return builder.ToString();
         }
 
-        internal FuncRecord CreateFuncRecord(VarType returnType, string name, List<VarRecord> vars, Quad quad)
+        internal FuncRecord CreateFuncRecord(VarType returnType, string name, Dictionary<string, VarType> paramDict, Quad quad)
         {
+            List<VarRecord> vars = new();
+            foreach (KeyValuePair<string, VarType> pair in paramDict)
+            {
+                VarRecord var = CreateLocalVarRecord(pair.Key, pair.Value);
+                if (var == null)
+                {
+                    throw new ArgumentException("重复的函数参数名");
+                }
+                vars.Add(var);
+            }
+
             FuncRecord func = FindFuncRecord(name, vars);
             if (func != null) { return null; }
 
@@ -219,11 +235,8 @@ namespace CLikeCompiler.Libs.Runtime
         internal CallRecord CreateCallRecord(FuncRecord caller, FuncRecord callee)
         {
             if(FindCallRecord(caller, callee) != null) { return null; }
-            CallRecord call = new()
-            {
-                Caller = caller,
-                Callee = callee
-            };
+
+            CallRecord call = new(caller, callee);
             callTable.Add(call);
             return call;
         }

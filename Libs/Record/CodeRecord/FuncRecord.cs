@@ -174,7 +174,16 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
                 {
                     offset -= (data.Width - vacancy);
                 }
-                offset -= data.Width;
+
+                if (data.GetRecordType() == RecordType.VAR)
+                {
+                    offset -= data.Width;
+                }
+                else if(data.GetRecordType() == RecordType.ARRAY)
+                {
+                    offset -= ((ArrayRecord)data).Length;
+                }
+                
                 data.Pos = RecordPos.MEM;
                 data.Offset = offset;
             }

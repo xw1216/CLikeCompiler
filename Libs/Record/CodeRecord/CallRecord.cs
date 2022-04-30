@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CLikeCompiler.Libs.Record.DataRecord;
 
 namespace CLikeCompiler.Libs.Record.CodeRecord
 {
@@ -16,6 +17,14 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
         internal FuncRecord Caller { get; set; }
         internal FuncRecord Callee { get; set; }
         internal List<Regs> SaveRegList { get; private set; }
+        internal List<VarRecord> ArgsList { get; set; }
+
+
+        public CallRecord(FuncRecord caller, FuncRecord callee)
+        {
+            Caller = caller;
+            Callee = callee;
+        }
 
         internal bool CalcuCallerSaveRegs()
         {
