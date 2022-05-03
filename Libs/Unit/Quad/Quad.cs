@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace CLikeCompiler.Libs.Unit.Quad
 {
-    internal class Quad
+    public class Quad
     {
         public static readonly List<string> QuadOp = new();
 
@@ -18,5 +18,21 @@ namespace CLikeCompiler.Libs.Unit.Quad
         internal IRecord Lhs { get; set; }
         internal IRecord Rhs { get; set; }
         internal IRecord Dst { get; set; }
+
+        internal string GetLhsName()
+        {
+            return Lhs == null ? "-" : Lhs.Name;
+        }
+
+        internal string GetRhsName()
+        {
+            return Lhs == null ? "-" : Rhs.Name;
+        }
+
+        internal string GetDstName()
+        {
+            return Dst == null ? "-" : Dst.Name;
+        }
+
     }
 }

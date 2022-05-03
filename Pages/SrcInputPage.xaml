@@ -103,7 +103,7 @@
                     </Grid>
 
                     <ListView x:Name="CheckMsgLink" SelectionMode="Single"  Grid.Row="2" 
-                                    ItemsSource="{x:Bind util:Logger.ActionDisplayed}"
+                                    ItemsSource="{x:Bind logger.ActionDisplayed}"
                                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                         <ListView.ItemContainerTransitions>
                             <TransitionCollection>

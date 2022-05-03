@@ -12,25 +12,57 @@ using CLikeCompiler.Libs.Util.LogItem;
 
 namespace CLikeCompiler.Libs.Util
 {
-    public class Logger
+    public sealed class Logger
     {
         private static Logger logger = new();
 
         private StorageFile logFile;
         private readonly SemaphoreSlim semaphore;
-        private const int RecDisplayCnt = 15;
-        private const int LogDisplayCnt = 30;
+        public const int RecDisplayCnt = 300;
+        public const int LogDisplayCnt = 150;
+        public const int LogDisplayPageCnt = 15;
 
-        public static ObservableCollection<LogMsgItem> LogDisplayed { get; } = new();
+        public delegate void LogChangeHandler(LogMsgItem msg);
+        public delegate void LogClearHandler();
+        public event LogChangeHandler LogChange;
+        public event LogClearHandler LogClear;
 
-        public static ObservableCollection<LogAnalyItem> ActionDisplayed { get; } = new();
+        public  ObservableCollection<LogMsgItem> LogDisplayed { get; } = new();
+
+        public  ObservableCollection<LogAnalyItem> ActionDisplayed { get; } = new();
+
+        public  int LogPages
+        {
+            get
+            {
+                int pages = LogDisplayed.Count / LogDisplayPageCnt;
+                if (LogDisplayed.Count % LogDisplayCnt != 0)
+                {
+                    pages += 1;
+                }
+                return pages;
+            }
+        }
 
         private Logger()
         {
             semaphore = new SemaphoreSlim(1, 1);
         }
 
-        public static void ActionRecordTest()
+        public static ref Logger Instance()
+        {
+            return ref logger;
+        }
+
+        public void Initialize()
+        {
+            OpenLogHandle();
+        }
+
+
+        #region Analyze Action
+
+        public  void ActionRecordTest()
         {
             LexUnit unit = new()
             {
@@ -40,7 +72,7 @@ namespace CLikeCompiler.Libs.Util
             NewActionRecord(Term.End, unit, "Action Record Test ................................");
         }
 
-        internal static void NewActionRecord(Symbols sym, LexUnit unit, string msg)
+        internal void NewActionRecord(Symbols sym, LexUnit unit, string msg)
         {
             LogAnalyItem action = new()
             {
@@ -55,19 +87,22 @@ namespace CLikeCompiler.Libs.Util
             ActionDisplayed.Add(action);
         }
 
-        public static void ClearActionRecord()
+        public  void ClearActionRecord()
         {
             ActionDisplayed.Clear();
         }
 
-        public void Initialize()
-        {
-            OpenLogHandle();
-        }
+        #endregion
 
-        public static ref Logger Instance()
+        #region compiler logs
+
+        public void NewLogRecord(string msg, LogMsgItem.Type type)
         {
-            return ref logger;
+            RemoveOverflowLog();
+            LogMsgItem item = new(msg, type);
+            LogDisplayed.Add(item);
+            ExportRecordToFile(item);
+            OnLogChange(item);
         }
 
         private async void OpenLogHandle()
@@ -77,14 +112,6 @@ namespace CLikeCompiler.Libs.Util
             logFile = await storageFolder.CreateFileAsync("Log.txt",
                 CreationCollisionOption.OpenIfExists);
             await FileIO.WriteTextAsync(logFile, "");
-        }
-
-        public void NewLogRecord(string msg, LogMsgItem.Type type)
-        {
-            RemoveOverflowRecord();
-            LogMsgItem item = new(msg, type);
-            LogDisplayed.Add(item);
-            ExportRecordToFile(item);
         }
 
         public void OpenLogInNotepad()
@@ -104,7 +131,7 @@ namespace CLikeCompiler.Libs.Util
             semaphore.Release();
         }
 
-        private void RemoveOverflowRecord()
+        private void RemoveOverflowLog()
         {
             if (LogDisplayed.Count > LogDisplayCnt)
             {
@@ -112,18 +139,31 @@ namespace CLikeCompiler.Libs.Util
             }
         }
 
-        public void ClearDisplayRecord()
+        public void ClearDisplayLog()
         {
             LogDisplayed.Clear();
+            OnLogClear();
         }
 
-        public static bool IsLogEmpty()
+        public  bool IsLogEmpty()
         {
             if (LogDisplayed == null || LogDisplayed.Count > 0)
             {
                 return true;
             }
             return false;
+        }
+
+        #endregion
+
+        private void OnLogChange(LogMsgItem msg)
+        {
+            LogChange?.Invoke(msg);
+        }
+
+        private void OnLogClear()
+        {
+            LogClear?.Invoke();
         }
     }
 }

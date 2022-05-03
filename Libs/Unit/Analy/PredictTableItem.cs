@@ -24,5 +24,10 @@ namespace CLikeCompiler.Libs.Unit.Analy
         {
             return status == Status.BLANK;
         }
+
+        public override string ToString()
+        {
+            return status.ToString() + prod.ToString();
+        }
     }
 }

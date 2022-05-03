@@ -26,6 +26,11 @@ namespace CLikeCompiler.Libs.Unit.Symbol
             refCnt = 0;
         }
 
+        public override string ToString()
+        {
+            return type + " " + name;
+        }
+
         internal Type GetForm() { return type; }
         protected void SetForm(Type form) { this.type = form; }
         internal string GetName() { return name; }

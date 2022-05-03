@@ -30,9 +30,9 @@ namespace CLikeCompiler.Libs.Component
 
         internal void ResetGramServer()
         {
-            prods = null;
-            terms = null;
-            nTerms = null;
+            prods?.Clear();
+            terms?.Clear();
+            nTerms?.Clear();
             table = null;
             IsGramReady = false;
             lastInput = null;
@@ -61,7 +61,7 @@ namespace CLikeCompiler.Libs.Component
             PrefixFactoring();
             CalcuAllFirstAndFollow();
             PrintGrammar();
-            PrintFirstAndFollow();
+            // PrintFirstAndFollow();
             BuildPredictTable();
             IsGramReady = true;
         }
@@ -813,10 +813,11 @@ namespace CLikeCompiler.Libs.Component
 
         private bool GramAnalyTermHandler(LexUnit input, Symbols top, ref bool IsNext, ref bool IsEnd)
         {
+            Logger logger = Logger.Instance();
             // Analysis Success.
             if (top == Term.End && IsTopInputMatch(top, input)) 
             {
-                Logger.NewActionRecord(top, input, "分析完成");
+                logger.NewActionRecord(top, input, "分析完成");
                 IsNext = false;
                 IsEnd = true;
                 return true; 
@@ -824,14 +825,14 @@ namespace CLikeCompiler.Libs.Component
             // Terminal match, pop and move to next input
             else if (IsTopInputMatch(top, input))
             {
-                Logger.NewActionRecord(top, input, "匹配弹出，读入新符");
+                logger.NewActionRecord(top, input, "匹配弹出，读入新符");
                 stack.Pop();
                 IsNext = true;
                 return true;
             }
             else
             {
-                Logger.NewActionRecord(top, input, "无法匹配，跳过输入");
+                logger.NewActionRecord(top, input, "无法匹配，跳过输入");
                 Compiler.Instance().ReportFrontInfo(this,
                     new LogReportArgs(LogMsgItem.Type.WARN,
                     $"非预期的语法，跳过输入符号：{input.cont} ", input.line));
@@ -843,11 +844,12 @@ namespace CLikeCompiler.Libs.Component
 
         private bool GramAnalyNTermHandler(LexUnit input, Symbols top, DynamicProperty prop ,ref bool IsNext)
         {
+            Logger logger = Logger.Instance();
             PredictTableItem item = FindPredictItem((NTerm)top, input);
             // Encounter Sync Symbol , handle error before
             if (item.status == PredictTableItem.Status.SYNCH)
             {
-                Logger.NewActionRecord(top, input, "同步符号，弹出栈顶");
+                logger.NewActionRecord(top, input, "同步符号，弹出栈顶");
                 Compiler.Instance().ReportFrontInfo(this,
                     new LogReportArgs(LogMsgItem.Type.WARN,
                     $"遭遇同步符号，{input.cont} ", input.line));
@@ -858,7 +860,7 @@ namespace CLikeCompiler.Libs.Component
             // Unexpected input terminal , jump over and continue
             else if (item.status == PredictTableItem.Status.BLANK)
             {
-                Logger.NewActionRecord(top, input, "无法匹配，跳过输入");
+                logger.NewActionRecord(top, input, "无法匹配，跳过输入");
                 Compiler.Instance().ReportFrontInfo(this,
                     new LogReportArgs(LogMsgItem.Type.WARN,
                     $"非预期的语法，跳过输入符号：{input.cont} ", input.line));
@@ -869,7 +871,7 @@ namespace CLikeCompiler.Libs.Component
             {
                 //  栈顶为非终结符且预测表项有值 进行推导与语义动作入栈控制
                 IsNext = false;
-                Logger.NewActionRecord(top, input, item.prod.ToString());
+                logger.NewActionRecord(top, input, item.prod.ToString());
                 Compiler.midGen.DeriveHandler(item, input);
                 return true;
             }
@@ -877,7 +879,8 @@ namespace CLikeCompiler.Libs.Component
 
         private bool GramAnalyActionHandler(LexUnit input, Symbols top, ref bool IsNext)
         {
-            Logger.NewActionRecord(top, input, "执行语义动作");
+            Logger logger = Logger.Instance();
+            logger.NewActionRecord(top, input, "执行语义动作");
             GramAction act = (GramAction)top;
             bool IsActionCorrect = act.Activate();
 

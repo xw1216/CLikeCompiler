@@ -26,6 +26,8 @@ namespace CLikeCompiler.Pages
     /// </summary>
     public sealed partial class SrcInputPage : Page
     {
+        private Logger logger = Logger.Instance();
+
         public SrcInputPage()
         {
             this.InitializeComponent();
@@ -127,12 +129,12 @@ namespace CLikeCompiler.Pages
 
         private void ClearActionRecordClick(object sender, RoutedEventArgs e)
         {
-            Logger.ClearActionRecord();
+            logger.ClearActionRecord();
         }
 
         private void TestActionRecordClick(object sender, RoutedEventArgs e)
         {
-            Logger.ActionRecordTest();
+            logger.ActionRecordTest();
         }
 
         private void SingleStepClick(object sender, RoutedEventArgs e)

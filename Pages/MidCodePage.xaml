@@ -5,10 +5,100 @@
     xmlns:local="using:CLikeCompiler.Pages"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:quad="using:CLikeCompiler.Libs.Unit.Quad"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
-    <Grid>
+    <Page.Resources>
+        <Style x:Key="ScrollViewerStyle" TargetType="ScrollViewer">
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalScrollMode" Value="Enabled"/>
+            <Setter Property="HorizontalScrollBarVisibility" Value="Hidden"/>
+            <Setter Property="VerticalScrollMode" Value="Disabled"/>
+            <Setter Property="VerticalScrollBarVisibility" Value="Disabled"/>
+        </Style>
+    </Page.Resources>
 
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition/>
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <CommandBar Grid.Row="0" Background="Transparent" IsOpen="False" DefaultLabelPosition="Right" IsDynamicOverflowEnabled="False">
+            <CommandBar.Content>
+                <TextBlock Text="中间代码" FontSize="20" Margin="20,14" VerticalAlignment="Top" />
+            </CommandBar.Content>
+        </CommandBar>
+
+        <Grid Grid.Row="1" Margin="14, 14, 14, 14" HorizontalAlignment="Stretch">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="1*"/>
+            </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="操作名" FontSize="16" 
+                            Padding="4, 0, 4, 0" ></TextBlock>
+                <TextBlock Grid.Column="1" Text="源操作数 1" FontSize="16" 
+                            Padding="0, 0, 4, 0"></TextBlock>
+                <TextBlock Grid.Column="2" Text="源操作数 2" FontSize="16" 
+                            Padding="0, 0, 4, 0"></TextBlock>
+                <TextBlock Grid.Column="3" Text="目的数" FontSize="16" 
+                            Padding="0, 0, 4, 0"></TextBlock>
+        </Grid>
+
+        <ListView x:Name="QuadListView" SelectionMode="Single"  Grid.Row="2" 
+                  ItemsSource="{x:Bind quadList}"
+                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <ListView.ItemContainerTransitions>
+                            <TransitionCollection>
+                                <RepositionThemeTransition/>
+                                <AddDeleteThemeTransition/>
+                            </TransitionCollection>
+            </ListView.ItemContainerTransitions>
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="quad:Quad">
+                      <Grid Margin="14, 7, 14, 7" Height="16">
+                          <Grid.ColumnDefinitions>
+                               <ColumnDefinition Width="1*"/>
+                               <ColumnDefinition Width="1*"/>
+                               <ColumnDefinition Width="1*"/>
+                               <ColumnDefinition Width="1*"/>
+                          </Grid.ColumnDefinitions>
+                          <ScrollViewer Grid.Column="0" Style="{StaticResource ScrollViewerStyle}">
+                              <ScrollViewer.Content>
+                                  <TextBlock  Text="{x:Bind Name}" FontSize="14" Padding="4, 0, 4, 0" TextTrimming="Clip"></TextBlock>
+                              </ScrollViewer.Content>
+                          </ScrollViewer>
+                          <ScrollViewer Grid.Column="1" Style="{StaticResource ScrollViewerStyle}">
+                              <ScrollViewer.Content>
+                                  <TextBlock  Text="{x:Bind GetLhsName()}" FontSize="14" Padding="0, 0, 4, 0"></TextBlock>
+                              </ScrollViewer.Content>
+                          </ScrollViewer>
+                          <ScrollViewer Grid.Column="2" Style="{StaticResource ScrollViewerStyle}"> 
+                              <ScrollViewer.Content>
+                                  <TextBlock  Text="{x:Bind GetRhsName()}" FontSize="14" Padding="0, 0, 4, 0"></TextBlock>
+                              </ScrollViewer.Content>
+                          </ScrollViewer>
+                          <ScrollViewer Grid.Column="3" Style="{StaticResource ScrollViewerStyle}">
+                              <ScrollViewer.Content>
+                                  <TextBlock  Text="{x:Bind GetDstName()}" FontSize="14" Padding="0, 0, 4, 0"></TextBlock>
+                              </ScrollViewer.Content>
+                          </ScrollViewer>
+                       </Grid>
+                 </DataTemplate>
+            </ListView.ItemTemplate>
+         </ListView>
+        
+        <PipsPager Grid.Row="3" x:Name="QuadPager" Orientation="Horizontal"
+                   PreviousButtonVisibility="Visible" NextButtonVisibility="Visible"
+                   HorizontalAlignment="Center" 
+                   NumberOfPages="{x:Bind PageCnt, Mode=TwoWay}"
+                   SelectedPageIndex="{x:Bind PageIndex, Mode=TwoWay}" >
+        </PipsPager>
     </Grid>
 </Page>

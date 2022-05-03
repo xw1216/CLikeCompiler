@@ -58,7 +58,7 @@ namespace CLikeCompiler.Libs.Component
 
         internal void GetSymbolRefs(ref List<Prod> prod, ref List<Term> term, ref List<NTerm> nTerm)
         {
-            if (prod == null) throw new ArgumentNullException(nameof(prod));
+            // if (prod == null) throw new ArgumentNullException(nameof(prod));
             prod = this.prods;
             term = this.terms;
             nTerm = this.nTerms;

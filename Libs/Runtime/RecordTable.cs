@@ -64,6 +64,8 @@ namespace CLikeCompiler.Libs.Runtime
             scopeTables.Clear();
             globalTable.Clear();
             currentTable = null;
+            currentFunc = null;
+            isFuncScopeSkip = false;
         }
         
         #endregion
@@ -131,7 +133,7 @@ namespace CLikeCompiler.Libs.Runtime
                 return null;
             }
             LabelRecord label = new(quad, name);
-            if(quad == null ) { quad.Label = label; }
+            if(quad.Label == null ) { quad.Label = label; }
             label.ToQuad = quad;
             labelTable.Add(label);
             return label;
@@ -181,9 +183,16 @@ namespace CLikeCompiler.Libs.Runtime
         internal FuncRecord CreateFuncRecord(VarType returnType, string name, Dictionary<string, VarType> paramDict, Quad quad)
         {
             List<VarRecord> vars = new();
+
+            FuncRecord func = new()
+            {
+                Name = name,
+                ReturnType = returnType
+            };
+            currentTable = func.LocalTable;
             foreach (KeyValuePair<string, VarType> pair in paramDict)
             {
-                VarRecord var = CreateLocalVarRecord(pair.Key, pair.Value);
+                VarRecord var = CreateArgRecord(pair.Key, pair.Value);
                 if (var == null)
                 {
                     throw new ArgumentException("重复的函数参数名");
@@ -191,15 +200,10 @@ namespace CLikeCompiler.Libs.Runtime
                 vars.Add(var);
             }
 
-            FuncRecord func = FindFuncRecord(name, vars);
-            if (func != null) { return null; }
+            FuncRecord findFunc = FindFuncRecord(name, vars);
+            if (findFunc != null) { return null; }
 
-            func = new FuncRecord
-            {
-                Name = name,
-                ReturnType = returnType,
-                ArgsList = vars
-            };
+            func.ArgsList = vars;
 
             isFuncScopeSkip = true;
             // 设置主入口函数
@@ -208,8 +212,6 @@ namespace CLikeCompiler.Libs.Runtime
             // 设置函数跳转标签
             LabelRecord label = CreateLabelRecord(quad, "Func_" + name + GetArgsAbbr(vars));
             func.Label = label;
-            label.ToQuad = quad;
-            if(quad.Label == null) { quad.Label = label; }
             // 设置第一条四元式位置
             func.QuadStart = quad;
             // 设置函数作用域
@@ -330,7 +332,8 @@ namespace CLikeCompiler.Libs.Runtime
 
         internal ConsVarRecord CreateConsRecord(VarType type, string cont)
         {
-            if (FindConsRecord(cont) == null) { return null; }
+            ConsVarRecord consRecord = (ConsVarRecord)FindConsRecord(cont);
+            if (consRecord != null) { return consRecord; }
             ConsVarRecord consVar = new();
             ParseConsRecordInput(consVar, type, cont);
             consTable.AddRecord(consVar);
@@ -368,9 +371,24 @@ namespace CLikeCompiler.Libs.Runtime
 
         // ------------------------------ 变量部分 -------------------------------
 
+        internal VarRecord CreateArgRecord(string name, VarType type)
+        {
+            if (!IsLocalRecordExist(name))
+            {
+                VarRecord record = new()
+                {
+                    Name = name,
+                    Type = type,
+                    Pos = RecordPos.REG
+                };
+                return record;
+            }
+            return null;
+        }
+
         internal VarRecord CreateLocalVarRecord(string name, VarType type)
         {
-            if (IsLocalRecordExist(name))
+            if (!IsLocalRecordExist(name))
             {
                 VarRecord record = new()
                 {
@@ -386,7 +404,7 @@ namespace CLikeCompiler.Libs.Runtime
 
         internal ArrayRecord CreateLocalArrayRecord(string name, VarType type, List<int> dimList)
         {
-            if (IsLocalRecordExist(name))
+            if (!IsLocalRecordExist(name))
             {
                 ArrayRecord record = new()
                 {

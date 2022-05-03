@@ -67,14 +67,15 @@ namespace CLikeCompiler.Libs
             midGen.SetTable(quadTable, recordTable);
         }
 
-        public void ResetCompiler()
+        public static void ResetCompiler()
         {
             prepro.ResetPrePro();
             lex.ResetLex();
             parser.ResetGramParser();
             gram.ResetGramServer();
+            midGen.ResetMidGenServer();
 
-            MainWindow.GetInstance().SetDefaultRootPath();
+            // MainWindow.GetInstance().SetDefaultRootPath();
         }
 
         public static ref Compiler Instance()
@@ -84,9 +85,7 @@ namespace CLikeCompiler.Libs
 
         public bool StartCompile(ref string src, TextBox box)
         {
-            prepro.ResetPrePro();
-            lex.ResetLex();
-            gram.ResetAnalyStack();
+            ResetCompiler();
             string srcAfter = "";
 
             // First make sure base grammar productions is ready.
@@ -162,7 +161,7 @@ namespace CLikeCompiler.Libs
 
         private bool StartGramServer()
         {
-            bool isGramCorrect = false;
+            bool isGramCorrect;
             try { 
                 isGramCorrect = gram.StartGramAnaly();
                 string tips = (isGramCorrect ? "分析完成" : "语法分析完成，发现错误");

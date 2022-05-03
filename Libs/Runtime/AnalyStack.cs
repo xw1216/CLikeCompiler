@@ -12,8 +12,8 @@ namespace CLikeCompiler.Libs.Runtime
 
         public void ResetStack()
         {
-            symbols.Clear();
-            properties.Clear();
+            symbols?.Clear();
+            properties?.Clear();
         }
 
         internal int Length => symbols.Count;

@@ -11,12 +11,14 @@ using CLikeCompiler.Libs.Record.CodeRecord;
 using CLikeCompiler.Libs.Record.DataRecord;
 using CLikeCompiler.Libs.Record.Interface;
 using CLikeCompiler.Libs.Unit.Quad;
+using CLikeCompiler.Libs.Unit.Reg;
+// ReSharper disable UnusedMember.Global
 
 // ReSharper disable UnusedMember.Local
 
 namespace CLikeCompiler.Libs.Component
 {
-    internal class MidGenServer
+    public class MidGenServer
     {
         private readonly AnalyStack stack;
 
@@ -32,6 +34,17 @@ namespace CLikeCompiler.Libs.Component
         internal MidGenServer(GramServer gram)
         {
             stack = gram.GetStack();
+        }
+
+        internal void ResetMidGenServer()
+        {
+            predictCol = 0;
+            predictCol = 0;
+            inputLast = null;
+            inputNow = null;
+            engageQueue?.Clear();
+            quadTable?.Clear();
+            recordTable?.ResetRecordTable();
         }
 
         internal void SetTable(QuadTable quadTableArg, RecordTable recordTableArg)
@@ -54,7 +67,7 @@ namespace CLikeCompiler.Libs.Component
 
         #region Stack Control
 
-        internal void StackTopProp(out dynamic prop)
+        private void StackTopProp(out dynamic prop)
         {
             stack.Top(out _, out prop);
         }
@@ -66,7 +79,7 @@ namespace CLikeCompiler.Libs.Component
 
         private void AutoPush(int cnt)
         {
-            if(cnt >= engageQueue.Count) { return; }
+            if(cnt > engageQueue.Count) { return; }
             for(; cnt > 0; cnt--)
             {
                 stack.Push(engageQueue[0]);
@@ -97,7 +110,7 @@ namespace CLikeCompiler.Libs.Component
             }
 
             GramAction action = new(name);
-            Delegate del =  Delegate.CreateDelegate(typeof(GramAction.ActionHandler), method);
+            Delegate del =  Delegate.CreateDelegate(typeof(GramAction.ActionHandler), this, method);
             action.AddHandler(del as GramAction.ActionHandler);
             return action;
         }
@@ -135,6 +148,38 @@ namespace CLikeCompiler.Libs.Component
                 quadTable.GenQuad("itr", rhsEntry, null, temp);
                 rhsEntry = temp;
             }
+        }
+
+        private VarRecord FilterFindVarRecord(string name)
+        {
+            IDataRecord entry = recordTable.FindRecord(name);
+            if (entry == null)
+            {
+                throw new ArgumentException("不存在该标识符：" + name);
+            }
+
+            if (entry.GetRecordType() != RecordType.VAR)
+            {
+                throw new ArgumentException("不支持引用非单变量：" + name);
+            }
+
+            return (VarRecord)entry;
+        }
+
+        private ArrayRecord FilterFindArrayRecord(string name)
+        {
+            IDataRecord entry = recordTable.FindRecord(name);
+            if (entry == null)
+            {
+                throw new ArgumentException("不存在该标识符：" + name);
+            }
+
+            if (entry.GetRecordType() != RecordType.ARRAY)
+            {
+                throw new ArgumentException("不支持单变量的数组引用：" + name);
+            }
+
+            return (ArrayRecord)entry;
         }
 
         private void DefaultDeriveNoProp()
@@ -271,7 +316,7 @@ namespace CLikeCompiler.Libs.Component
             }
         }
 
-        private bool DeclareActionS1()
+        public bool DeclareActionS1()
         {
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(1, out dynamic funcDeclareProp);
@@ -280,7 +325,7 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool DeclareActionS2()
+        public bool DeclareActionS2()
         {
             StackTopProp(out dynamic s2Prop);
             stack.RelativeFetch(3, out dynamic declareProp);
@@ -288,11 +333,11 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool DeclareActionS3()
+        public bool DeclareActionS3()
         {
             StackTopProp(out dynamic s3Prop);
             stack.RelativeFetch(1, out dynamic declareProp);
-            declareProp.type = s3Prop.varType;
+            declareProp.name = s3Prop.name;
             return true;
         }
         #endregion
@@ -350,7 +395,7 @@ namespace CLikeCompiler.Libs.Component
             AutoPush(2);
         }
 
-        private bool FuncDeclareActionS1()
+        public bool FuncDeclareActionS1()
         {
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(2, out dynamic s2Prop);
@@ -358,7 +403,7 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool FuncDeclareActionS2()
+        public bool FuncDeclareActionS2()
         {
             StackTopProp(out dynamic s2Prop);
             stack.RelativeFetch(2, out dynamic s3Prop);
@@ -390,7 +435,7 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool FuncDeclareActionS3()
+        public bool FuncDeclareActionS3()
         {
             StackTopProp(out dynamic s3Prop);
             FuncRecord func = s3Prop.func;
@@ -441,7 +486,7 @@ namespace CLikeCompiler.Libs.Component
             AutoPush(2);
         }
 
-        private bool ArrayDeclareActionS1()
+        public bool ArrayDeclareActionS1()
         {
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(2, out dynamic loopProp);
@@ -451,7 +496,7 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool ArrayDeclareActionS2()
+        public bool ArrayDeclareActionS2()
         {
             StackTopProp(out dynamic s2Prop);
             ArrayRecord array = 
@@ -492,7 +537,7 @@ namespace CLikeCompiler.Libs.Component
             }
         }
 
-        private bool ArrayDeclareLoopActionS1()
+        public bool ArrayDeclareLoopActionS1()
         {
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(2, out dynamic arrayDeclareLoopProp);
@@ -503,7 +548,7 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool ArrayDeclareLoopActionS2()
+        public bool ArrayDeclareLoopActionS2()
         {
             StackTopProp(out dynamic s2Prop);
             stack.RelativeFetch(1, out dynamic backProp);
@@ -527,7 +572,7 @@ namespace CLikeCompiler.Libs.Component
             AutoPush(1);
         }
 
-        private bool FormParamActionS1()
+        public bool FormParamActionS1()
         {
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(1, out dynamic backProp);
@@ -535,7 +580,7 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool FormParamActionS2()
+        public bool FormParamActionS2()
         {
             stack.RelativeFetch(1, out dynamic backProp);
             backProp.paramDict = new Dictionary<string, VarType>();
@@ -559,7 +604,7 @@ namespace CLikeCompiler.Libs.Component
             AutoPush(1);
         }
 
-        private bool ParamListActionS1()
+        public bool ParamListActionS1()
         {
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(1, out dynamic paramListLoopProp);
@@ -569,7 +614,7 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool ParamListActionS2()
+        public bool ParamListActionS2()
         {
             StackTopProp(out dynamic s2Prop);
             stack.RelativeFetch(1, out dynamic backProp);
@@ -605,7 +650,7 @@ namespace CLikeCompiler.Libs.Component
             }
         }
 
-        private bool ParamListLoopActionS1()
+        public bool ParamListLoopActionS1()
         {
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(1, out dynamic paramListLoopProp);
@@ -619,7 +664,7 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool ParamListLoopActionS2()
+        public bool ParamListLoopActionS2()
         {
             StackTopProp(out dynamic nowProp);
             stack.RelativeFetch(1, out dynamic backProp);
@@ -645,7 +690,7 @@ namespace CLikeCompiler.Libs.Component
             AutoPush(1);
         }
 
-        private bool ParamActionS1()
+        public bool ParamActionS1()
         {
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(3, out dynamic backProp);
@@ -653,7 +698,7 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool ParamActionS2()
+        public bool ParamActionS2()
         {
             StackTopProp(out dynamic s2Prop);
             stack.RelativeFetch(1, out dynamic backProp);
@@ -685,7 +730,7 @@ namespace CLikeCompiler.Libs.Component
             }
         }
 
-        private bool ArgsActionS1()
+        public bool ArgsActionS1()
         {
             StackTopProp(out dynamic nowProp);
             stack.RelativeFetch(1, out dynamic backProp);
@@ -709,7 +754,7 @@ namespace CLikeCompiler.Libs.Component
             AutoPush(1);
         }
 
-        private bool ArgsListActionS1()
+        public bool ArgsListActionS1()
         {
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(1, out dynamic argsListLoopProp);
@@ -718,7 +763,7 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool ArgsListActionS2()
+        public bool ArgsListActionS2()
         {
             StackTopProp(out dynamic s2Prop);
             stack.RelativeFetch(1, out dynamic backProp);
@@ -752,7 +797,7 @@ namespace CLikeCompiler.Libs.Component
             }
         }
 
-        private bool ArgListLoopActionS1()
+        public bool ArgListLoopActionS1()
         {
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(1, out dynamic argsListLoopProp);
@@ -763,7 +808,7 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool ArgListLoopActionS2()
+        public bool ArgListLoopActionS2()
         {
             StackTopProp(out dynamic nowProp);
             stack.RelativeFetch(1, out dynamic backProp);
@@ -793,13 +838,13 @@ namespace CLikeCompiler.Libs.Component
             stack.Push(actionS1);
         }
 
-        private bool StateBlockActionS1()
+        public bool StateBlockActionS1()
         {
             recordTable.EnterScope();
             return true;
         }
 
-        private bool StateBlockActionS2()
+        public bool StateBlockActionS2()
         {
             recordTable.LeaveScope();
             return true;
@@ -837,7 +882,7 @@ namespace CLikeCompiler.Libs.Component
             AutoPush(1);
         }
 
-        private bool InnerVarDeclareActionS1()
+        public bool InnerVarDeclareActionS1()
         {
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(3, out dynamic typeDeclareProp);
@@ -845,7 +890,7 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool InnerVarDeclareActionS2()
+        public bool InnerVarDeclareActionS2()
         {
             StackTopProp(out dynamic s2Prop);
             stack.RelativeFetch(1, out dynamic typeDeclareProp);
@@ -909,14 +954,14 @@ namespace CLikeCompiler.Libs.Component
             AutoPush(1);
         }
 
-        private bool AssignActionS1()
+        public bool AssignActionS1()
         {
             stack.RelativeFetch(1, out dynamic assignProp);
-            if (inputLast.type != LexUnit.Type.ID)
+            if (inputNow.type != LexUnit.Type.ID)
             {
                 throw new ArgumentException("变量标识符无法识别");
             }
-            assignProp.name =inputLast.cont;
+            assignProp.name =inputNow.cont;
             return true;
         }
         #endregion
@@ -939,9 +984,13 @@ namespace CLikeCompiler.Libs.Component
             AutoPush(2);
         }
 
-        private bool ReturnActionS1()
+        public bool ReturnActionS1()
         {
             StackTopProp(out dynamic s1Prop);
+            if (s1Prop.returnType != s1Prop.type)
+            {
+                throw new ArgumentOutOfRangeException($"不符合定义的返回值类型");
+            }
             if (s1Prop.type == VarType.VOID) { return true; }
             VarRecord data = s1Prop.entry;
             if (data.Type == VarType.VOID) { return true; }
@@ -972,7 +1021,7 @@ namespace CLikeCompiler.Libs.Component
             }
         }
 
-        private bool ReturnAlterActionS1()
+        public bool ReturnAlterActionS1()
         {
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(1, out dynamic backProp);
@@ -982,7 +1031,7 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool ReturnAlterActionS2()
+        public bool ReturnAlterActionS2()
         {
             stack.RelativeFetch(1, out dynamic backProp);
             backProp.type = VarType.VOID;
@@ -1014,7 +1063,7 @@ namespace CLikeCompiler.Libs.Component
             AutoPush(2);
         }
 
-        private bool WhileActionS1()
+        public bool WhileActionS1()
         {
             stack.RelativeFetch(5, out dynamic s3Prop);
 
@@ -1024,7 +1073,7 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool WhileActionS2()
+        public bool WhileActionS2()
         {
             StackTopProp(out dynamic s2Prop);
             stack.RelativeFetch(3, out dynamic s3Prop);
@@ -1045,7 +1094,7 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool WhileActionS3()
+        public bool WhileActionS3()
         {
             StackTopProp(out dynamic s3Prop);
             Quad loopQuad = s3Prop.loopQuad;
@@ -1082,7 +1131,7 @@ namespace CLikeCompiler.Libs.Component
             AutoPush(3);
         }
 
-        private bool IfActionS1()
+        public bool IfActionS1()
         {
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(4, out dynamic ifAlterProp);
@@ -1134,7 +1183,7 @@ namespace CLikeCompiler.Libs.Component
             }
         }
 
-        private bool IfAlterActionS1()
+        public bool IfAlterActionS1()
         {
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(2, out dynamic s2Prop);
@@ -1151,7 +1200,7 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool IfAlterActionS2()
+        public bool IfAlterActionS2()
         {
             StackTopProp(out dynamic s2Prop);
             Quad endQuad = quadTable.NextQuadRef();
@@ -1161,7 +1210,7 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool IfAlterActionS3()
+        public bool IfAlterActionS3()
         {
             StackTopProp(out dynamic s3Prop);
             Quad falseQuad = quadTable.NextQuadRef();
@@ -1188,7 +1237,7 @@ namespace CLikeCompiler.Libs.Component
             AutoPush(1);
         }
 
-        private bool ExprActionS1()
+        public bool ExprActionS1()
         {
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(1, out dynamic exprLoopProp);
@@ -1197,7 +1246,7 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool ExprActionS2()
+        public bool ExprActionS2()
         {
             StackTopProp(out dynamic s2Prop);
             stack.RelativeFetch(1, out dynamic backProp);
@@ -1237,7 +1286,7 @@ namespace CLikeCompiler.Libs.Component
             }
         }
 
-        private bool ExprLoopActionS1()
+        public bool ExprLoopActionS1()
         {
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(2, out dynamic s2Prop);
@@ -1245,7 +1294,7 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool ExprLoopActionS2()
+        public bool ExprLoopActionS2()
         {
             StackTopProp(out dynamic s2Prop);
             stack.RelativeFetch(1, out dynamic exprLoopProp);
@@ -1275,7 +1324,7 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool ExprLoopActionS3()
+        public bool ExprLoopActionS3()
         {
             StackTopProp(out dynamic s3Prop);
             stack.RelativeFetch(1, out dynamic backProp);
@@ -1283,7 +1332,7 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool ExprLoopActionS4()
+        public bool ExprLoopActionS4()
         {
             StackTopProp(out dynamic s4Prop);
             stack.RelativeFetch(1, out dynamic backProp);
@@ -1337,7 +1386,7 @@ namespace CLikeCompiler.Libs.Component
             AutoPush(1);
         }
 
-        private bool AddExprActionS1()
+        public bool AddExprActionS1()
         {
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(1, out dynamic addExprLoopProp);
@@ -1346,7 +1395,7 @@ namespace CLikeCompiler.Libs.Component
         }
 
 
-        private bool AddExprActionS2()
+        public bool AddExprActionS2()
         {
             StackTopProp(out dynamic s2Prop);
             stack.RelativeFetch(1, out dynamic backProp);
@@ -1364,14 +1413,13 @@ namespace CLikeCompiler.Libs.Component
             StackPop();
 
             dynamic hierarchyProp = new DynamicProperty();
-            hierarchyProp.lhsEntry = addExprLoopProp.entry;
+            hierarchyProp.lhsEntry = addExprLoopProp.lhsEntry;
 
             switch (predictCol)
             {
                 case > 1:
                 {
                     GramAction actionS5 = CreateBindActions("AddExprLoop S3");
-                    stack.Push(actionS5);
                     stack.Push(actionS5, hierarchyProp);
                     return;
                 }
@@ -1391,7 +1439,7 @@ namespace CLikeCompiler.Libs.Component
             AutoPush(2);
         }
 
-        private bool AddExprLoopActionS1()
+        public bool AddExprLoopActionS1()
         {
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(1, out dynamic addExprLoopProp);
@@ -1412,7 +1460,7 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool AddExprLoopActionS2()
+        public bool AddExprLoopActionS2()
         {
             StackTopProp(out dynamic s2Prop);
             stack.RelativeFetch(1, out dynamic backProp);
@@ -1420,7 +1468,7 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool AddExprLoopActionS3()
+        public bool AddExprLoopActionS3()
         {
             StackTopProp(out dynamic s3Prop);
             stack.RelativeFetch(1, out dynamic backProp);
@@ -1445,15 +1493,15 @@ namespace CLikeCompiler.Libs.Component
             AutoPush(1);
         }
 
-        private bool ItemActionS1()
+        public bool ItemActionS1()
         {
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(1, out dynamic itemLoopProp);
-            itemLoopProp.entry = s1Prop.entry;
+            itemLoopProp.lhsEntry = s1Prop.lhsEntry;
             return true;
         }
 
-        private bool ItemActionS2()
+        public bool ItemActionS2()
         {
             StackTopProp(out dynamic s2Prop);
             stack.RelativeFetch(1, out dynamic backProp);
@@ -1471,14 +1519,13 @@ namespace CLikeCompiler.Libs.Component
             StackPop();
 
             dynamic hierarchyProp = new DynamicProperty();
-            hierarchyProp.lhsEntry = itemLoopProp.entry;
+            hierarchyProp.lhsEntry = itemLoopProp.lhsEntry;
 
             switch (predictCol)
             {
                 case > 1:
                 {
                     GramAction actionS5 = CreateBindActions("ItemLoop S3");
-                    stack.Push(actionS5);
                     stack.Push(actionS5, hierarchyProp);
                     return;
                 }
@@ -1498,7 +1545,7 @@ namespace CLikeCompiler.Libs.Component
             AutoPush(2);
         }
 
-        private bool ItemLoopActionS1()
+        public bool ItemLoopActionS1()
         {
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(1, out dynamic itemLoopProp);
@@ -1514,7 +1561,7 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool ItemLoopActionS2()
+        public bool ItemLoopActionS2()
         {
             StackTopProp(out dynamic s2Prop);
             stack.RelativeFetch(1, out dynamic backProp);
@@ -1522,7 +1569,7 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool ItemLoopActionS3()
+        public bool ItemLoopActionS3()
         {
             StackTopProp(out dynamic s3Prop);
             stack.RelativeFetch(1, out dynamic backProp);
@@ -1575,7 +1622,7 @@ namespace CLikeCompiler.Libs.Component
             }
         }
 
-        private bool FactorActionS1()
+        public bool FactorActionS1()
         {
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(1, out dynamic backProp);
@@ -1583,33 +1630,33 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool FactorActionS2()
+        public bool FactorActionS2()
         {
             stack.RelativeFetch(1, out dynamic backProp);
-            VarType type = RecognizeInputLastType();
+            VarType type = RecognizeInputType();
             VarRecord constant;
-            if (type == VarType.CHAR && inputLast.cont.Length > 1)
+            if (type == VarType.CHAR && inputNow.cont.Length > 1)
             {
-                // constant = recordTable.CreateConsArrayRecord(VarType.CHAR, inputLast.cont);
+                // constant = recordTable.CreateConsArrayRecord(VarType.CHAR, inputNow.cont);
                 throw new ArgumentException("不支持数组直接赋值");
             }
             else
             {
-                constant = recordTable.CreateConsRecord(type, inputLast.cont);
+                constant = recordTable.CreateConsRecord(type, inputNow.cont);
             }
             backProp.entry = constant;
             return true;
         }
 
-        private VarType RecognizeInputLastType()
+        private VarType RecognizeInputType()
         {
-            switch (inputLast.type)
+            switch (inputNow.type)
             {
                 case LexUnit.Type.CH:
                 case LexUnit.Type.STR:
                     return VarType.CHAR;
                 case LexUnit.Type.KEYWORD:
-                    if (inputLast.name is "true" or "false")
+                    if (inputNow.name is "true" or "false")
                     {
                         return VarType.BOOL;
                     }
@@ -1619,7 +1666,7 @@ namespace CLikeCompiler.Libs.Component
             }
         }
 
-        private bool FactorActionS3()
+        public bool FactorActionS3()
         {
             StackTopProp(out dynamic s3Prop);
             stack.RelativeFetch(2, out dynamic backProp);
@@ -1627,18 +1674,18 @@ namespace CLikeCompiler.Libs.Component
             return true;
         }
 
-        private bool FactorActionS4()
+        public bool FactorActionS4()
         {
             stack.RelativeFetch(1, out dynamic factorProp);
-            if (inputLast.type != LexUnit.Type.ID)
+            if (inputNow.type != LexUnit.Type.ID)
             {
                 throw new ArgumentException("变量标识符无法识别");
             }
-            factorProp.name = inputLast.cont;
+            factorProp.name = inputNow.cont;
             return true;
         }
 
-        private bool FactorActionS5()
+        public bool FactorActionS5()
         {
             StackTopProp(out dynamic s4Prop);
             stack.RelativeFetch(1, out dynamic backProp);
@@ -1673,7 +1720,7 @@ namespace CLikeCompiler.Libs.Component
         }
 
         // 函数调用
-        private bool CallTypeActionS1()
+        public bool CallTypeActionS1()
         {
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(1, out dynamic backProp);
@@ -1682,23 +1729,16 @@ namespace CLikeCompiler.Libs.Component
         }
 
         // 变量引用
-        private bool CallTypeActionS2()
+        public bool CallTypeActionS2()
         {
             StackTopProp(out dynamic s2Prop);
             stack.RelativeFetch(1, out dynamic backProp);
-            IDataRecord entry = recordTable.FindRecord(s2Prop.name);
-            if (entry == null)
-            {
-                throw new ArgumentException("不存在该标识符：" + s2Prop.name);
-            }
-
-            if (entry.GetRecordType() != RecordType.VAR)
-            {
-                throw new ArgumentException("不支持引用非单变量：" + s2Prop.name);
-            }
-            backProp.entry = (VarRecord)entry;
+            VarRecord entry = FilterFindVarRecord(s2Prop.name);
+            backProp.entry = entry;
             return true;
         }
+
+
         #endregion
 
         #region No.35 Call
@@ -1719,7 +1759,7 @@ namespace CLikeCompiler.Libs.Component
             AutoPush(2);
         }
 
-        private bool CallActionS1()
+        public bool CallActionS1()
         {
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(2, out dynamic backProp);
@@ -1786,14 +1826,14 @@ namespace CLikeCompiler.Libs.Component
             AutoPush(1);
         }
 
-        private bool IdActionS1()
+        public bool IdActionS1()
         {
             stack.RelativeFetch(1, out dynamic backProp);
-            if (inputLast.type != LexUnit.Type.ID)
+            if (inputNow.type != LexUnit.Type.ID)
             {
                 throw new ArgumentException("无法识别的标识符");
             }
-            backProp.name = inputLast.cont;
+            backProp.name = inputNow.cont;
             return true;
         }
         #endregion
@@ -1803,8 +1843,42 @@ namespace CLikeCompiler.Libs.Component
         // 37. VarType -> int | long | bool | char S1
         private void VarTypePushCtrl()
         {
+            StackPop();
 
+            GramAction actionS1 = CreateBindActions("VarType S1");
+
+            stack.Push(actionS1);
+            AutoPush(1);
         }
+
+        public bool VarTypeActionS1()
+        {
+            stack.RelativeFetch(1, out dynamic backProp);
+            VarType varType = ParseInputType();
+            backProp.varType = varType;
+            return true;
+        }
+
+        private VarType ParseInputType()
+        {
+            LexUnit.Type lexType = inputNow.type;
+            switch (lexType) {
+                case LexUnit.Type.KEYWORD:
+                    VarType varType = inputNow.cont switch
+                    {
+                        "int" => VarType.INT,
+                        "long" => VarType.LONG,
+                        "bool" => VarType.BOOL,
+                        "char" => VarType.CHAR,
+                        _ => throw new ArgumentOutOfRangeException($"不支持的变量类型")
+                    };
+
+                    return varType;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
         #endregion
 
         #region No.38 Num
@@ -1812,8 +1886,28 @@ namespace CLikeCompiler.Libs.Component
         // 38. Num -> integer S1
         private void NumPushCtrl()
         {
+            StackPop();
 
+            GramAction actionS1 = CreateBindActions("Num S1");
+
+            stack.Push(actionS1);
+            AutoPush(1);
         }
+
+        public bool NumActionS1()
+        {
+            stack.RelativeFetch(1, out dynamic backProp);
+            LexUnit.Type lexType = inputNow.type;
+            if (lexType != LexUnit.Type.INT)
+            {
+                throw new ArgumentOutOfRangeException($"不支持的数字常量类型");
+            }
+
+            VarRecord varRecord = recordTable.CreateConsRecord(VarType.LONG, inputNow.cont);
+            backProp.entry = varRecord;
+            return true;
+        }
+
         #endregion
 
         #region No.39 Relop
@@ -1821,7 +1915,25 @@ namespace CLikeCompiler.Libs.Component
         // 39. Relop -> eq | neq | leq | geq | gre | les S1
         private void RelopPushCtrl()
         {
+            StackPop();
 
+            GramAction actionS1 = CreateBindActions("Relop S1");
+
+            stack.Push(actionS1);
+            AutoPush(1);
+        }
+
+        public bool RelopActionS1()
+        {
+            stack.RelativeFetch(1, out dynamic backProp);
+            LexUnit.Type lexType = inputNow.type;
+            if (lexType != LexUnit.Type.OP)
+            {
+                throw new ArgumentOutOfRangeException($"不支持的操作符类型");
+            }
+
+            backProp.op = inputNow.name;
+            return true;
         }
         #endregion
 
@@ -1830,7 +1942,105 @@ namespace CLikeCompiler.Libs.Component
         // 40. Array' -> blank S1 | lsbrc Expr S2 rsbrc Array'  S3
         private void ArraySPushCtrl()
         {
+            StackTopProp(out dynamic arraySProp);
+            StackPop();
 
+            dynamic hierarchyProp = new DynamicProperty();
+            hierarchyProp.name = arraySProp.name;
+            hierarchyProp.indexList = arraySProp.indexList;
+
+            if (predictCol == 0)
+            {
+                GramAction actionS1 = CreateBindActions("ArrayS S1");
+                stack.Push(actionS1, hierarchyProp);
+            } else if (predictCol == 1)
+            {
+                GramAction actionS2 = CreateBindActions("ArrayS S2");
+                GramAction actionS3 = CreateBindActions("ArrayS S3");
+                stack.Push(actionS3);
+                AutoPush(2);
+                stack.Push(actionS2, hierarchyProp);
+                AutoPush(2);
+            }
+        }
+
+        public bool ArraySActionS1()
+        {
+            StackTopProp(out dynamic s1Prop);
+            stack.RelativeFetch(1, out dynamic backProp);
+
+            string name = s1Prop.name;
+            List<VarRecord> indexList = s1Prop.indexList;
+            ArrayRecord arrayRecord = FilterFindArrayRecord(name);
+            VarRecord indexRecord = CalcuArrayIndex(indexList, arrayRecord);
+            indexRecord = CalcuArrayElem(arrayRecord, indexRecord);
+            backProp.entry = indexRecord;
+            return true;
+        }
+
+        private VarRecord CalcuArrayIndex(IReadOnlyList<VarRecord> indexList, ArrayRecord arrayRecord)
+        {
+            if (indexList.Count != arrayRecord.Dim)
+            {
+                throw new ArgumentException("不支持数组指针");
+            }
+
+            VarTempRecord dstVar = recordTable.CreateTempVarRecord(VarType.LONG);
+            VarTempRecord indexVar = recordTable.CreateTempVarRecord(VarType.LONG);
+            ImmRecord index = new ("index", 0);
+            Regs zero = Compiler.regFiles.FindRegs("zero");
+
+            if (arrayRecord.Dim == 1)
+            {
+                quadTable.GenQuad("addi", indexList[0], index, dstVar);
+            }
+            else
+            {
+                VarTempRecord srcVar =recordTable.CreateTempVarRecord(VarType.LONG);
+                VarTempRecord midVar = recordTable.CreateTempVarRecord(VarType.LONG);
+
+                for (int i = 0; i < indexList.Count - 1; i++)
+                {
+                    quadTable.GenQuad("addi", zero, index, indexVar);
+                    quadTable.GenQuad("mul", i == 0 ? indexList[0] : srcVar, indexVar, midVar);
+                    quadTable.GenQuad("add", midVar, indexList[i + 1], dstVar);
+                }
+            }
+            ImmRecord width = new ("index", arrayRecord.Width);
+            quadTable.GenQuad("addi", zero, width, indexVar);
+            quadTable.GenQuad("mul", dstVar, indexVar, dstVar);
+
+            return dstVar;
+        }
+
+        private VarRecord CalcuArrayElem( ArrayRecord arrayRecord, VarRecord indexRecord)
+        {
+            ArrayRefRecord refRecord = new ArrayRefRecord(arrayRecord, indexRecord);
+            // dstVar 作为数组元素的直接指针不加入运行栈中 只作为传递
+            VarTempRecord dstVar = new VarTempRecord(arrayRecord.Type);
+            quadTable.GenQuad("ArrayMove", refRecord, null , dstVar);
+            return dstVar;
+        }
+
+        public bool ArraySActionS2()
+        {
+            StackTopProp(out dynamic s2Prop);
+            stack.RelativeFetch(2, out dynamic arraySProp);
+
+            arraySProp.name = s2Prop.name;
+            List<VarRecord> indexList = s2Prop.indexList;
+            VarRecord entry = s2Prop.entry;
+            indexList.Add(entry);
+            arraySProp.indexList = indexList;
+            return true;
+        }
+
+        public bool ArraySActionS3()
+        {
+            StackTopProp(out dynamic s3Prop);
+            stack.RelativeFetch(2, out dynamic backProp);
+            backProp.entry = s3Prop.entry;
+            return true;
         }
         #endregion
 
@@ -1839,7 +2049,20 @@ namespace CLikeCompiler.Libs.Component
         // 41. Declare ~ -> TypeDeclare | FuncDeclare
         private void DeclareTPushCtrl()
         {
+            StackTopProp(out dynamic declareProp);
+            StackPop();
 
+            dynamic hierarchyProp = new DynamicProperty();
+            if (predictCol == 0)
+            {
+                hierarchyProp.name = declareProp.name;
+                hierarchyProp.type = declareProp.type;
+            } else if (predictCol == 1)
+            {
+                hierarchyProp.funcName = declareProp.name;
+                hierarchyProp.returnType = declareProp.type;
+            }
+            AutoPush(hierarchyProp);
         }
         #endregion
 
@@ -1848,7 +2071,72 @@ namespace CLikeCompiler.Libs.Component
         // 42. Assign~ -> assign Expr S1 smc | lsbrc Expr S2 rsbrc Array' S3 assign Expr S4 smc 
         private void AssignTPushCtrl()
         {
+            StackTopProp(out dynamic assignTProp);
+            StackPop();
 
+            dynamic hierarchyProp = new DynamicProperty();
+            hierarchyProp.name = assignTProp.name;
+            
+            if (predictCol == 0)
+            {
+                GramAction actionS1 = CreateBindActions("AssignT S1");
+                AutoPush(1);
+                stack.Push(actionS1, hierarchyProp);
+                AutoPush(2);
+            }
+            else if(predictCol == 1)
+            {
+                GramAction actionS2 = CreateBindActions("AssignT S2");
+                GramAction actionS3 = CreateBindActions("AssignT S3");
+                GramAction actionS4 = CreateBindActions("AssignT S4");
+                AutoPush(1);
+                stack.Push(actionS4);
+                AutoPush(2);
+                stack.Push(actionS3);
+                AutoPush(2);
+                stack.Push(actionS2, hierarchyProp);
+                AutoPush(2);
+            }
+        }
+
+        public bool AssignTActionS1()
+        {
+            StackTopProp(out dynamic s1Prop);
+            string name = s1Prop.name;
+            VarRecord lhsRecord = FilterFindVarRecord(name);
+            VarRecord rhsRecord = s1Prop.entry;
+            ItrDataType(ref lhsRecord, ref rhsRecord);
+            quadTable.GenQuad("assign", rhsRecord, null, lhsRecord);
+            return true;
+        }
+
+        public bool AssignTActionS2()
+        {
+            StackTopProp(out dynamic s2Prop);
+            stack.RelativeFetch(2, out dynamic arraySProp);
+            VarRecord var = s2Prop.entry;
+            List<VarRecord> indexList = new() { var };
+            arraySProp.name = s2Prop.name;
+            arraySProp.indexList = indexList;
+            return true;
+        }
+
+        public bool AssignTActionS3()
+        {
+            StackTopProp(out dynamic s3Prop);
+            stack.RelativeFetch(3, out dynamic s4Prop);
+            s4Prop.lhsEntry = s3Prop.entry;
+            return true;
+        }
+
+        public bool AssignTActionS4()
+        {
+            StackTopProp(out dynamic s4Prop);
+            VarRecord lhsRecord = s4Prop.lhsEntry;
+            VarRecord rhsRecord = s4Prop.entry;
+            ItrDataType(ref lhsRecord, ref rhsRecord);
+            quadTable.GenQuad("assign", rhsRecord, null, lhsRecord);
+            return true;
         }
         #endregion
 
@@ -1857,12 +2145,56 @@ namespace CLikeCompiler.Libs.Component
         // 43. Factor ~ -> CallType S1 | lsbrc Expr S2 rsbrc Array' S3
         private void FactorTPushCtrl()
         {
+            StackTopProp(out dynamic factorTProp);
+            StackPop();
 
+            dynamic hierarchyProp = new DynamicProperty();
+            hierarchyProp.name = factorTProp.name;
+
+            if (predictCol == 0)
+            {
+                GramAction actionS1 = CreateBindActions("FactorT S1");
+                stack.Push(actionS1);
+                AutoPush(hierarchyProp);
+            } else if (predictCol == 1)
+            {
+                GramAction actionS2 = CreateBindActions("FactorT S2");
+                GramAction actionS3 = CreateBindActions("FactorT S3");
+                stack.Push(actionS3);
+                AutoPush(hierarchyProp);
+                AutoPush(1);
+                stack.Push(actionS2);
+                AutoPush(2);
+            }
+        }
+
+        public bool FactorTActionS1()
+        {
+            StackTopProp(out dynamic s1Prop);
+            stack.RelativeFetch(1, out dynamic backProp);
+            backProp.entry = s1Prop.entry;
+            return true;
+        }
+
+        public bool FactorTActionS2()
+        {
+            StackTopProp(out dynamic s2Prop);
+            stack.RelativeFetch(2, out dynamic arraySProp);
+            VarRecord var = s2Prop.entry;
+            List<VarRecord> indexList = new() { var };
+            arraySProp.indexList = indexList;
+            return true;
+        }
+
+        public bool FactorTActionS3()
+        {
+            StackTopProp(out dynamic s3Prop);
+            stack.RelativeFetch(1, out dynamic backProp);
+            backProp.entry = s3Prop.entry;
+            return true;
         }
         #endregion
-
-                
-
+        
         #endregion
     }
 }

@@ -30,7 +30,7 @@ namespace CLikeCompiler.Libs.Unit.Analy
             Detected += action;
         }
 
-        internal delegate bool ActionHandler();
-        private event ActionHandler Detected;
+        public delegate bool ActionHandler();
+        public event ActionHandler Detected;
     }
 }

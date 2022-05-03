@@ -19,5 +19,10 @@ namespace CLikeCompiler.Libs.Unit.Analy
         internal string name;
         internal string cont;
         internal int line;
+
+        public override string ToString()
+        {
+            return type + " " + name + " " + cont;
+        }
     }
 }
