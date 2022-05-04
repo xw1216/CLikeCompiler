@@ -26,7 +26,7 @@ namespace CLikeCompiler.Libs.Unit.Quad
 
         internal string GetRhsName()
         {
-            return Lhs == null ? "-" : Rhs.Name;
+            return Rhs == null ? "-" : Rhs.Name;
         }
 
         internal string GetDstName()

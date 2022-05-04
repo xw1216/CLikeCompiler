@@ -9,9 +9,9 @@ namespace CLikeCompiler.Libs.Enum
     public enum VarType
     {
         VOID,
+        BOOL,
+        CHAR,
         INT,
         LONG,
-        BOOL,
-        CHAR
     }
 }

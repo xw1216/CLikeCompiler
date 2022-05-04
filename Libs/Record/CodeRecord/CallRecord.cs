@@ -12,7 +12,7 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
 {
     internal class CallRecord : IRecord
     {
-        public string Name { get; set; }
+        public string Name { get ; set; }
 
         internal FuncRecord Caller { get; set; }
         internal FuncRecord Callee { get; set; }
@@ -32,6 +32,11 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
 
             SaveRegList = RegFiles.CalcuCallerSaveList(Caller, Callee);
             return true;
+        }
+
+        public override string ToString()
+        {
+            return Caller.Name + " : " + Callee.Name;
         }
 
         public RecordType GetRecordType()

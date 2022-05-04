@@ -28,15 +28,14 @@ namespace CLikeCompiler.Pages
     public sealed partial class MidCodePage : Page
     {
         private readonly QuadTable quadTable = Compiler.quadTable;
-
         public readonly ObservableCollection<Quad> quadList = new();
 
-        private const int PageDisplayCnt = 15;
+        private bool isPaneOpen = false;
 
+        private const int PageDisplayCnt = 15;
         private int PageCnt { get; set; } = 1;
 
         private int pageIndex = 0;
-
         public int PageIndex
         {
             get => pageIndex;
@@ -94,6 +93,13 @@ namespace CLikeCompiler.Pages
             this.InitializeComponent();
             quadTable.NewQuadEvent += NewQuadHandler;
             quadTable.ClearQuadEvent += QuadClearHandler;
+        }
+
+        private void TogglePaneOnClick(object sender, RoutedEventArgs e)
+        {
+            isPaneOpen = SplitView.IsPaneOpen;
+            isPaneOpen = !isPaneOpen;
+            SplitView.IsPaneOpen = isPaneOpen;
         }
     }
 }

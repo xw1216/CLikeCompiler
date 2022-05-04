@@ -23,46 +23,57 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
             <RowDefinition/>
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <CommandBar Grid.Row="0" Background="Transparent" IsOpen="False" DefaultLabelPosition="Right" IsDynamicOverflowEnabled="False">
+            <CommandBar.SecondaryCommands>
+                <AppBarButton Icon="Bullets" Label="说明"  Click="TogglePaneOnClick">
+                    <AppBarButton.KeyboardAccelerators>
+                        <KeyboardAccelerator Modifiers="Control" Key="D" />
+                    </AppBarButton.KeyboardAccelerators>
+                </AppBarButton>
+            </CommandBar.SecondaryCommands>
             <CommandBar.Content>
                 <TextBlock Text="中间代码" FontSize="20" Margin="20,14" VerticalAlignment="Top" />
             </CommandBar.Content>
         </CommandBar>
 
-        <Grid Grid.Row="1" Margin="14, 14, 14, 14" HorizontalAlignment="Stretch">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1*"/>
-                <ColumnDefinition Width="1*"/>
-                <ColumnDefinition Width="1*"/>
-                <ColumnDefinition Width="1*"/>
-            </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="操作名" FontSize="16" 
-                            Padding="4, 0, 4, 0" ></TextBlock>
-                <TextBlock Grid.Column="1" Text="源操作数 1" FontSize="16" 
-                            Padding="0, 0, 4, 0"></TextBlock>
-                <TextBlock Grid.Column="2" Text="源操作数 2" FontSize="16" 
-                            Padding="0, 0, 4, 0"></TextBlock>
-                <TextBlock Grid.Column="3" Text="目的数" FontSize="16" 
-                            Padding="0, 0, 4, 0"></TextBlock>
-        </Grid>
-
-        <ListView x:Name="QuadListView" SelectionMode="Single"  Grid.Row="2" 
+        <SplitView Grid.Row="1" x:Name="SplitView" DisplayMode="Overlay" IsPaneOpen="False" PanePlacement="Right" OpenPaneLength="600">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="0" Margin="20, 14, 14, 14" HorizontalAlignment="Stretch">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1*"/>
+                        <ColumnDefinition Width="1*"/>
+                        <ColumnDefinition Width="1*"/>
+                        <ColumnDefinition Width="1*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="操作名" FontSize="16" 
+                               Padding="4, 0, 4, 0" ></TextBlock>
+                    <TextBlock Grid.Column="1" Text="源操作数 1" FontSize="16" 
+                               Padding="0, 0, 4, 0"></TextBlock>
+                    <TextBlock Grid.Column="2" Text="源操作数 2" FontSize="16" 
+                               Padding="0, 0, 4, 0"></TextBlock>
+                    <TextBlock Grid.Column="3" Text="目的数" FontSize="16" 
+                               Padding="0, 0, 4, 0"></TextBlock>
+                </Grid>
+                    <ListView x:Name="QuadListView" SelectionMode="Single"  Grid.Row="1" 
                   ItemsSource="{x:Bind quadList}"
                   HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
             <ListView.ItemContainerTransitions>
-                            <TransitionCollection>
+                            <TransitionCollection>   
                                 <RepositionThemeTransition/>
                                 <AddDeleteThemeTransition/>
                             </TransitionCollection>
             </ListView.ItemContainerTransitions>
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="quad:Quad">
-                      <Grid Margin="14, 7, 14, 7" Height="16">
+                      <Grid Margin="14, 7, 14, 7" Height="24">
                           <Grid.ColumnDefinitions>
                                <ColumnDefinition Width="1*"/>
                                <ColumnDefinition Width="1*"/>
@@ -93,8 +104,42 @@
                  </DataTemplate>
             </ListView.ItemTemplate>
          </ListView>
+            </Grid>
+            
+            <SplitView.Pane>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <TextBlock Grid.Row="0" x:Name="PaneHeader" Text="中间代码说明" TextAlignment="Center"
+                                        FontSize="18" Margin="0,14, 0, 7" FontWeight="Bold"/>
+
+                    <RichTextBlock Grid.Row="1" Margin="14, 7, 14, 7" FontSize="14" HorizontalAlignment="Center" >
+                        <Paragraph HorizontalTextAlignment="Center">
+                            1. 一个四元式由操作名、源操作数 1、源操作数 2、目的数四项组成。
+                        </Paragraph >
+                        <Paragraph HorizontalTextAlignment="Center">
+                            2. 操作名首字母小写为元操作，大写为延迟到目标代码生成的自定义组合操作。
+                        </Paragraph>
+                        <Paragraph>
+                            3. ~Tmp 代表生成的临时变量，~Con 代表代码中的常量。
+                        </Paragraph>
+                        <Paragraph HorizontalTextAlignment="Center">
+                            4. a[-] 代表数组引用。
+                        </Paragraph>
+                        <Paragraph HorizontalTextAlignment="Center">
+                            5. caller : callee 代表函数调用操作。
+                        </Paragraph>
+                    </RichTextBlock>
+                </Grid>
+            </SplitView.Pane>
+        </SplitView>
+
         
-        <PipsPager Grid.Row="3" x:Name="QuadPager" Orientation="Horizontal"
+        
+        <PipsPager Grid.Row="2" x:Name="QuadPager" Orientation="Horizontal"
                    PreviousButtonVisibility="Visible" NextButtonVisibility="Visible"
                    HorizontalAlignment="Center" 
                    NumberOfPages="{x:Bind PageCnt, Mode=TwoWay}"

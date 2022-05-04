@@ -25,7 +25,7 @@ namespace CLikeCompiler.Libs.Runtime
 
         public QuadTable()
         {
-            QuadTest();
+            // QuadTest();
         }
 
         private void QuadTest()

@@ -60,7 +60,7 @@ namespace CLikeCompiler.Libs.Component
             RemoveLeftRecur();
             PrefixFactoring();
             CalcuAllFirstAndFollow();
-            PrintGrammar();
+            // PrintGrammar();
             // PrintFirstAndFollow();
             BuildPredictTable();
             IsGramReady = true;

@@ -15,9 +15,10 @@ using CLikeCompiler.Libs.Util.LogItem;
 using CLikeCompiler.Libs.Util;
 using CLikeCompiler.Libs.Unit.Reg;
 
+[assembly: InternalsVisibleTo("CLikeCompiler.Libs")]
+
 namespace CLikeCompiler.Libs
 {
-
     public class Compiler
     {
         private static Compiler compiler = new();
@@ -168,9 +169,11 @@ namespace CLikeCompiler.Libs
                 Compiler.Instance().ReportBackInfo(this,
                         new LogReportArgs(LogMsgItem.Type.INFO, tips));
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                LogReportArgs innerArgs = new(LogMsgItem.Type.ERROR, e.Message);
                 LogReportArgs args = new(LogMsgItem.Type.ERROR, "内部错误，停止语法检查");
+                ReportBackInfo(this, innerArgs);
                 ReportBackInfo(this, args);
                 lex.ResetLex();
                 gram.ResetAnalyStack();

@@ -20,7 +20,7 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
         {
             this.RefArray = refArray;
             this.RefIndex = refIndex;
-            this.Name = refArray.Name + "_" + refIndex.Name;
+            this.Name = refArray.Name + "[" + refIndex.Name + "]";
         }
 
         public RecordType GetRecordType()

@@ -150,6 +150,24 @@ namespace CLikeCompiler.Libs.Component
             }
         }
 
+        private void ItrDataType(ref VarRecord record, VarType type)
+        {
+            VarType recType = record.Type;
+            if (record.GetRecordType() != RecordType.VAR)
+            {
+                throw new ArgumentException("非单变量无法转换类型");
+            }
+
+            if (recType == type) return;
+            if (recType == VarType.VOID || type == VarType.VOID)
+            {
+                throw new ArgumentException("void 无法转换类型");
+            }
+            VarTempRecord temp = recordTable.CreateTempVarRecord(type);
+            quadTable.GenQuad("itr", record, null, temp);
+            record = temp;
+        }
+
         private VarRecord FilterFindVarRecord(string name)
         {
             IDataRecord entry = recordTable.FindRecord(name);
@@ -349,7 +367,9 @@ namespace CLikeCompiler.Libs.Component
         private void TypeDeclarePushCtrl()
         {
             StackTopProp(out dynamic typeDeclareProp);
-            dynamic backProp = DynamicProperty.CreateByDynamic(typeDeclareProp);
+            dynamic backProp = new DynamicProperty();
+            backProp.name = typeDeclareProp.name;
+            backProp.type = typeDeclareProp.type;
 
             StackPop();
             AutoPush(backProp);
@@ -471,10 +491,8 @@ namespace CLikeCompiler.Libs.Component
             GramAction actionS2 = CreateBindActions("ArrayDeclare S2");
 
             dynamic s1Prop = new DynamicProperty();
-            s1Prop.dim = 1;
             s1Prop.dimList = new List<int>();
-            s1Prop.dimList.Add(((ConsVarRecord)s1Prop.entry).Val);
-            
+
             dynamic s2Prop = new DynamicProperty();
             s2Prop.name = arrayDeclareProp.name;
             s2Prop.type = arrayDeclareProp.type;
@@ -490,7 +508,9 @@ namespace CLikeCompiler.Libs.Component
         {
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(2, out dynamic loopProp);
-
+            s1Prop.dim = 1;
+            dynamic num = ((ConsVarRecord)s1Prop.entry).Val;
+            s1Prop.dimList.Add(num);
             loopProp.dim = s1Prop.dim;
             loopProp.dimList = s1Prop.dimList;
             return true;
@@ -542,7 +562,8 @@ namespace CLikeCompiler.Libs.Component
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(2, out dynamic arrayDeclareLoopProp);
             s1Prop.dim++;
-            s1Prop.dimList.Add(((ConsVarRecord)s1Prop.entry).Val);
+            dynamic num = ((ConsVarRecord)s1Prop.entry).Val;
+            s1Prop.dimList.Add(num);
             arrayDeclareLoopProp.dim = s1Prop.dim;
             arrayDeclareLoopProp.dimList = s1Prop.dimList;
             return true;
@@ -778,6 +799,7 @@ namespace CLikeCompiler.Libs.Component
         private void ArgListLoopPushCtrl()
         {
             StackTopProp(out dynamic argListProp);
+            StackPop();
 
             dynamic hierarchyProp = new DynamicProperty();
             hierarchyProp.argsList =argListProp.argsList;
@@ -868,7 +890,7 @@ namespace CLikeCompiler.Libs.Component
 
         #region No.18 InnerVarDeclare
 
-        // 18. InnerVarDeclare -> VarType Id TypeDeclare
+        // 18. InnerVarDeclare -> VarType S1 Id S2 TypeDeclare
         private void InnerVarDeclarePushCtrl()
         {
             StackPop();
@@ -912,7 +934,8 @@ namespace CLikeCompiler.Libs.Component
 
             dynamic stateProp = new DynamicProperty();
             stateProp.returnType = stateClusterProp.returnType;
-            dynamic hierarchyProp = new DynamicProperty(stateProp);
+            dynamic hierarchyProp = new DynamicProperty();
+            hierarchyProp.returnType = stateClusterProp.returnType;
 
             // 注意可能存在的引用失效
             AutoPush(hierarchyProp);
@@ -1134,7 +1157,7 @@ namespace CLikeCompiler.Libs.Component
         public bool IfActionS1()
         {
             StackTopProp(out dynamic s1Prop);
-            stack.RelativeFetch(4, out dynamic ifAlterProp);
+            stack.RelativeFetch(3, out dynamic ifAlterProp);
 
             VarRecord data = s1Prop.entry;
             List<Quad> trueList = new() { quadTable.NextQuadRef() };
@@ -1497,7 +1520,7 @@ namespace CLikeCompiler.Libs.Component
         {
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(1, out dynamic itemLoopProp);
-            itemLoopProp.lhsEntry = s1Prop.lhsEntry;
+            itemLoopProp.lhsEntry = s1Prop.entry;
             return true;
         }
 
@@ -1763,17 +1786,18 @@ namespace CLikeCompiler.Libs.Component
         {
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(2, out dynamic backProp);
-            List<VarRecord> argList = s1Prop.argList;
+            List<VarRecord> argsList = s1Prop.argsList;
             string funcName = s1Prop.name;
 
-            FuncRecord func = recordTable.FindFuncRecord(funcName, argList);
+            FuncRecord func = recordTable.FindFuncRecord(funcName, argsList);
             if (func == null)
             {
                 throw new ArgumentException("未定义的函数引用");
             }
 
             CallRecord callRecord = recordTable.CreateCallRecord(recordTable.GetFuncRecord(), func);
-            callRecord.ArgsList = argList;
+            callRecord.ArgsList = argsList;
+            callRecord.Name = callRecord.ToString();
 
             /* 调用入口
              * subi sp, sp, callSize
@@ -1802,12 +1826,10 @@ namespace CLikeCompiler.Libs.Component
              */
             quadTable.GenQuad("CallerExit", null, null, callRecord);
 
-            VarTempRecord record = new()
-            {
-                Type = func.ReturnType,
-                Pos = RecordPos.REG,
-                Reg = Compiler.regFiles.FindRegs("a0")
-            };
+            VarTempRecord record = recordTable.CreateTempVarRecord(func.ReturnType);
+            record.Pos = RecordPos.REG;
+            record.Reg = Compiler.regFiles.FindRegs("a0");
+
             backProp.entry = record;
             return true;
         }
@@ -1903,7 +1925,17 @@ namespace CLikeCompiler.Libs.Component
                 throw new ArgumentOutOfRangeException($"不支持的数字常量类型");
             }
 
-            VarRecord varRecord = recordTable.CreateConsRecord(VarType.LONG, inputNow.cont);
+            long longNum = long.Parse(inputNow.cont);
+            VarRecord varRecord;
+            if (longNum is <= int.MaxValue and >= int.MinValue)
+            {
+                varRecord = recordTable.CreateConsRecord(VarType.INT, inputNow.cont);
+            }
+            else
+            {
+                varRecord = recordTable.CreateConsRecord(VarType.LONG, inputNow.cont);
+            }
+
             backProp.entry = varRecord;
             return true;
         }
@@ -1948,6 +1980,10 @@ namespace CLikeCompiler.Libs.Component
             dynamic hierarchyProp = new DynamicProperty();
             hierarchyProp.name = arraySProp.name;
             hierarchyProp.indexList = arraySProp.indexList;
+            hierarchyProp.isRef = arraySProp.isRef;
+
+            dynamic refProp = new DynamicProperty();
+            refProp.isRef = arraySProp.isRef;
 
             if (predictCol == 0)
             {
@@ -1957,7 +1993,7 @@ namespace CLikeCompiler.Libs.Component
             {
                 GramAction actionS2 = CreateBindActions("ArrayS S2");
                 GramAction actionS3 = CreateBindActions("ArrayS S3");
-                stack.Push(actionS3);
+                stack.Push(actionS3, refProp);
                 AutoPush(2);
                 stack.Push(actionS2, hierarchyProp);
                 AutoPush(2);
@@ -1968,13 +2004,22 @@ namespace CLikeCompiler.Libs.Component
         {
             StackTopProp(out dynamic s1Prop);
             stack.RelativeFetch(1, out dynamic backProp);
+            bool isRef = s1Prop.isRef;
 
             string name = s1Prop.name;
             List<VarRecord> indexList = s1Prop.indexList;
             ArrayRecord arrayRecord = FilterFindArrayRecord(name);
-            VarRecord indexRecord = CalcuArrayIndex(indexList, arrayRecord);
-            indexRecord = CalcuArrayElem(arrayRecord, indexRecord);
-            backProp.entry = indexRecord;
+            VarRecord dstRecord = CalcuArrayIndex(indexList, arrayRecord);
+            ArrayRefRecord arrayRef = new (arrayRecord, dstRecord);
+            if (isRef)
+            {
+                dstRecord = GetArrayElem(arrayRef);
+                backProp.entry = dstRecord;
+            }
+            else
+            {
+                backProp.arrayRef = arrayRef;
+            }
             return true;
         }
 
@@ -1996,30 +2041,40 @@ namespace CLikeCompiler.Libs.Component
             }
             else
             {
-                VarTempRecord srcVar =recordTable.CreateTempVarRecord(VarType.LONG);
-                VarTempRecord midVar = recordTable.CreateTempVarRecord(VarType.LONG);
-
+                quadTable.GenQuad("and", zero, dstVar, dstVar);
                 for (int i = 0; i < indexList.Count - 1; i++)
                 {
+                    index.Value = arrayRecord.GetDimLen(i + 1);
                     quadTable.GenQuad("addi", zero, index, indexVar);
-                    quadTable.GenQuad("mul", i == 0 ? indexList[0] : srcVar, indexVar, midVar);
-                    quadTable.GenQuad("add", midVar, indexList[i + 1], dstVar);
+                    quadTable.GenQuad("mul", i == 0 ? indexList[0] : dstVar, indexVar, dstVar);
+                    quadTable.GenQuad("add", dstVar, indexList[i + 1], dstVar);
                 }
             }
-            ImmRecord width = new ("index", arrayRecord.Width);
+            ImmRecord width = new ("width", arrayRecord.Width);
             quadTable.GenQuad("addi", zero, width, indexVar);
             quadTable.GenQuad("mul", dstVar, indexVar, dstVar);
-
+            UpdateArrayPtrOffset(arrayRecord, dstVar);
             return dstVar;
         }
 
-        private VarRecord CalcuArrayElem( ArrayRecord arrayRecord, VarRecord indexRecord)
+        private void UpdateArrayPtrOffset(ArrayRecord arrayRecord,  VarRecord indexRecord)
         {
-            ArrayRefRecord refRecord = new ArrayRefRecord(arrayRecord, indexRecord);
-            // dstVar 作为数组元素的直接指针不加入运行栈中 只作为传递
-            VarTempRecord dstVar = new VarTempRecord(arrayRecord.Type);
-            quadTable.GenQuad("ArrayMove", refRecord, null , dstVar);
-            return dstVar;
+            /* dstRec 修正元素偏移量
+             * add dstRec, dstRec, fp
+             * add dstRec, dstRec, arrayRec.offset
+            */
+            quadTable.GenQuad("add", indexRecord, Compiler.regFiles.FindRegs("fp"), indexRecord);
+            quadTable.GenQuad("ArrayOffset", arrayRecord, null , indexRecord);
+        }
+
+        private VarRecord GetArrayElem(ArrayRefRecord arrayRef)
+        {
+            /* 
+             * mv srcVar, (dstRec)
+             */
+            VarTempRecord srcVar = recordTable.CreateTempVarRecord(arrayRef.RefArray.Type);
+            quadTable.GenQuad("ArrayLoad", arrayRef, null , srcVar);
+            return srcVar;
         }
 
         public bool ArraySActionS2()
@@ -2032,14 +2087,23 @@ namespace CLikeCompiler.Libs.Component
             VarRecord entry = s2Prop.entry;
             indexList.Add(entry);
             arraySProp.indexList = indexList;
+            arraySProp.isRef = s2Prop.isRef;
             return true;
         }
 
         public bool ArraySActionS3()
         {
             StackTopProp(out dynamic s3Prop);
-            stack.RelativeFetch(2, out dynamic backProp);
-            backProp.entry = s3Prop.entry;
+            stack.RelativeFetch(1, out dynamic backProp);
+            bool isRef = s3Prop.isRef;
+            if (isRef)
+            {
+                backProp.entry = s3Prop.entry;
+            }
+            else
+            {
+                backProp.arrayRef = s3Prop.arrayRef;
+            }
             return true;
         }
         #endregion
@@ -2076,7 +2140,10 @@ namespace CLikeCompiler.Libs.Component
 
             dynamic hierarchyProp = new DynamicProperty();
             hierarchyProp.name = assignTProp.name;
-            
+
+            dynamic arraySProp = new DynamicProperty();
+            arraySProp.isRef = false;
+
             if (predictCol == 0)
             {
                 GramAction actionS1 = CreateBindActions("AssignT S1");
@@ -2093,7 +2160,8 @@ namespace CLikeCompiler.Libs.Component
                 stack.Push(actionS4);
                 AutoPush(2);
                 stack.Push(actionS3);
-                AutoPush(2);
+                AutoPush(arraySProp);
+                AutoPush(1);
                 stack.Push(actionS2, hierarchyProp);
                 AutoPush(2);
             }
@@ -2106,7 +2174,7 @@ namespace CLikeCompiler.Libs.Component
             VarRecord lhsRecord = FilterFindVarRecord(name);
             VarRecord rhsRecord = s1Prop.entry;
             ItrDataType(ref lhsRecord, ref rhsRecord);
-            quadTable.GenQuad("assign", rhsRecord, null, lhsRecord);
+            quadTable.GenQuad("mv", rhsRecord, null, lhsRecord);
             return true;
         }
 
@@ -2125,17 +2193,21 @@ namespace CLikeCompiler.Libs.Component
         {
             StackTopProp(out dynamic s3Prop);
             stack.RelativeFetch(3, out dynamic s4Prop);
-            s4Prop.lhsEntry = s3Prop.entry;
+            s4Prop.lhsEntry = s3Prop.arrayRef;
             return true;
         }
 
         public bool AssignTActionS4()
         {
             StackTopProp(out dynamic s4Prop);
-            VarRecord lhsRecord = s4Prop.lhsEntry;
+            ArrayRefRecord arrayRecord = s4Prop.lhsEntry;
             VarRecord rhsRecord = s4Prop.entry;
-            ItrDataType(ref lhsRecord, ref rhsRecord);
-            quadTable.GenQuad("assign", rhsRecord, null, lhsRecord);
+            ItrDataType(ref rhsRecord, arrayRecord.RefArray.Type);
+            /* 
+             * 随后使用
+             * mv (arrayRecord.refIndex), rhsRecord 
+             */
+            quadTable.GenQuad("ArrayStore", rhsRecord, null, arrayRecord.RefIndex);
             return true;
         }
         #endregion
@@ -2183,6 +2255,7 @@ namespace CLikeCompiler.Libs.Component
             VarRecord var = s2Prop.entry;
             List<VarRecord> indexList = new() { var };
             arraySProp.indexList = indexList;
+            arraySProp.isRef = true;
             return true;
         }
 
