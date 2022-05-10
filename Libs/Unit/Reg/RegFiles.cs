@@ -14,7 +14,7 @@ namespace CLikeCompiler.Libs.Unit.Reg
         internal RegFiles()
         {
             regs = new List<Regs>();
-            for (int i = 0; i < regStdList.Count; i++)
+            for (int i = 0; i < RegStdList.Count; i++)
             {
                 regs.Add(new Regs(i));
             }
@@ -22,7 +22,7 @@ namespace CLikeCompiler.Libs.Unit.Reg
 
         internal static string GetRegName(int index)
         {
-            return regStdList[index];
+            return RegStdList[index];
         }
 
         internal Regs FindRegs(int index)
@@ -34,7 +34,7 @@ namespace CLikeCompiler.Libs.Unit.Reg
 
         internal Regs FindRegs(string name)
         {
-            int index = regStdList.IndexOf(name);
+            int index = RegStdList.IndexOf(name);
             if (index >= 0) { return regs[index]; }
             else { return null; }
         }
@@ -81,7 +81,7 @@ namespace CLikeCompiler.Libs.Unit.Reg
             }
         }
 
-        private static readonly List<string> regStdList = new()
+        private static readonly List<string> RegStdList = new()
         {
             "zero",
             "ra",
@@ -117,7 +117,7 @@ namespace CLikeCompiler.Libs.Unit.Reg
             "t6"
         };
 
-        private static readonly List<int> regCallerSaveList = new()
+        private static readonly List<int> RegCallerSaveList = new()
         {
             5,
             6,
@@ -134,7 +134,7 @@ namespace CLikeCompiler.Libs.Unit.Reg
             31
         };
 
-        private static readonly List<int> regCalleeSaveList = new()
+        private static readonly List<int> RegCalleeSaveList = new()
         {
             9,
             18,

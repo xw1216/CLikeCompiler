@@ -471,9 +471,12 @@ namespace CLikeCompiler.Libs.Component
              * ld   ra, frameSize-8(sp)
              * ld   fp, frameSize-16(sp)
              * subi sp, sp, frameSize
-             * jr   ra
              */
-            Quad last = quadTable.GenQuad("CalleeExit", null, null, func);
+            quadTable.GenQuad("CalleeExit", null, null, func);
+
+            Regs ra = Compiler.regFiles.FindRegs("ra");
+            Quad last = quadTable.GenQuad("jr", null, null, ra);
+
             func.QuadEnd = last;
             return true;
         }
@@ -1332,9 +1335,9 @@ namespace CLikeCompiler.Libs.Component
             VarRecord resultEntry = recordTable.CreateTempVarRecord(VarType.BOOL);
 
             Quad opQuad = GenRelopQuad(op, lhsEntry, rhsEntry, out bool jumpTrue);
-            quadTable.GenQuad("assign", jumpTrue ? immFalse : immTrue, null, resultEntry);
+            quadTable.GenQuad("mv", jumpTrue ? immFalse : immTrue, null, resultEntry);
             Quad jumpEndQuad = quadTable.GenQuad("j", null, null, null);
-            Quad trueQuad = quadTable.GenQuad("assign", jumpTrue ? immTrue : immFalse, null, resultEntry);
+            Quad trueQuad = quadTable.GenQuad("mv", jumpTrue ? immTrue : immFalse, null, resultEntry);
 
             recordTable.CreateTmpLabelRecord(trueQuad);
             Quad endQuad = quadTable.NextQuadRef();
@@ -1478,7 +1481,7 @@ namespace CLikeCompiler.Libs.Component
                 op = "add";
             }
 
-            quadTable.GenQuad(op, lhsEntry, resultEntry, resultEntry);
+            quadTable.GenQuad(op, lhsEntry, rhsEntry, resultEntry);
             addExprLoopProp.lhsEntry = resultEntry;
             return true;
         }
@@ -1579,7 +1582,7 @@ namespace CLikeCompiler.Libs.Component
             ItrDataType(ref lhsEntry, ref rhsEntry);
             VarRecord resultEntry = recordTable.CreateTempVarRecord(lhsEntry.Type);
 
-            quadTable.GenQuad(op, lhsEntry, resultEntry, resultEntry);
+            quadTable.GenQuad(op, lhsEntry, rhsEntry, resultEntry);
             itemLoopProp.lhsEntry = resultEntry;
             return true;
         }
@@ -1799,6 +1802,8 @@ namespace CLikeCompiler.Libs.Component
             callRecord.ArgsList = argsList;
             callRecord.Name = callRecord.ToString();
 
+            Regs ra = Compiler.regFiles.FindRegs("ra");
+
             /* 调用入口
              * subi sp, sp, callSize
              */
@@ -1808,14 +1813,16 @@ namespace CLikeCompiler.Libs.Component
              */
             quadTable.GenQuad("CallerSave", null, null, callRecord);
             /* 移动实参到指定位置
-             * e.g. mv a0, offset(fp) ...
-             * e.g. mv callSize-8(sp),  offset(fp)
+             * 八个以内 e.g. l { b | h | w | d }  a0, arg0.offset(fp) ...
+             * 超出 e.g.
+             * l { b | h | w | d } gp, arg8.offset(fp) 
+             * s { b | h | w | d } gp, callSize - param8.offset(sp)
              */
             quadTable.GenQuad("CallerArgs", null, null, callRecord);
             /* 实际调用
-             * e.g. call func
+             * e.g. jal ra, offset
              */
-            quadTable.GenQuad("Caller", null, null, callRecord);
+            quadTable.GenQuad("jal",ra , null, callRecord.Callee.Label);
 
             /* 恢复 Caller 寄存器
              * e.g. ld a2, callSize-8(sp)
@@ -2073,7 +2080,7 @@ namespace CLikeCompiler.Libs.Component
              * mv srcVar, (dstRec)
              */
             VarTempRecord srcVar = recordTable.CreateTempVarRecord(arrayRef.RefArray.Type);
-            quadTable.GenQuad("ArrayLoad", arrayRef, null , srcVar);
+            quadTable.GenQuad("ArrayLoad", arrayRef.RefIndex, null , srcVar);
             return srcVar;
         }
 

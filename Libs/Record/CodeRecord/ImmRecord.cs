@@ -1,12 +1,7 @@
 ﻿using CLikeCompiler.Libs.Enum;
 using CLikeCompiler.Libs.Record.Interface;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace CLikeCompiler.Libs.Record.DataRecord
+namespace CLikeCompiler.Libs.Record.CodeRecord
 {
     internal class ImmRecord : IRecord
     {
@@ -23,6 +18,11 @@ namespace CLikeCompiler.Libs.Record.DataRecord
         public RecordType GetRecordType()
         {
             return RecordType.IMM;
+        }
+
+        public override string ToString()
+        {
+            return Value.ToString();
         }
     }
 }

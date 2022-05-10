@@ -193,7 +193,7 @@ namespace CLikeCompiler.Libs
         internal void ReportBackInfo(object sender, LogReportArgs e)
         {
             string partName = GetComponentName(sender);
-            string tipMsg = (e.msgType == LogMsgItem.Type.INFO) ?  "：" : "内部问题：";
+            string tipMsg = (e.msgType == LogMsgItem.Type.INFO) ?  "：" : "问题：";
             string msg = partName + tipMsg +  e.msg;
             Logger.Instance().NewLogRecord(msg, e.msgType);
         }
