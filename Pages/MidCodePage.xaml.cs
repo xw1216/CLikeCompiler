@@ -15,7 +15,7 @@ using Windows.Foundation;
 using Windows.Foundation.Collections;
 using CLikeCompiler.Libs;
 using CLikeCompiler.Libs.Runtime;
-using CLikeCompiler.Libs.Unit.Quad;
+using CLikeCompiler.Libs.Unit.Quads;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.

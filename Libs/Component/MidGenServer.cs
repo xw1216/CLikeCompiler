@@ -10,7 +10,7 @@ using System.Reflection;
 using CLikeCompiler.Libs.Record.CodeRecord;
 using CLikeCompiler.Libs.Record.DataRecord;
 using CLikeCompiler.Libs.Record.Interface;
-using CLikeCompiler.Libs.Unit.Quad;
+using CLikeCompiler.Libs.Unit.Quads;
 using CLikeCompiler.Libs.Unit.Reg;
 // ReSharper disable UnusedMember.Global
 

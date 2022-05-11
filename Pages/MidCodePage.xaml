@@ -5,7 +5,7 @@
     xmlns:local="using:CLikeCompiler.Pages"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:quad="using:CLikeCompiler.Libs.Unit.Quad"
+    xmlns:quads="using:CLikeCompiler.Libs.Unit.Quads"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
@@ -72,7 +72,7 @@
                             </TransitionCollection>
             </ListView.ItemContainerTransitions>
             <ListView.ItemTemplate>
-                <DataTemplate x:DataType="quad:Quad">
+                <DataTemplate x:DataType="quads:Quad">
                       <Grid Margin="14, 7, 14, 7" Height="24">
                           <Grid.ColumnDefinitions>
                                <ColumnDefinition Width="1*"/>

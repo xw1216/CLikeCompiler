@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using CLikeCompiler.Libs.Unit.Quad;
+using CLikeCompiler.Libs.Unit.Quads;
 
 namespace CLikeCompiler.Libs.Record.CodeRecord
 {

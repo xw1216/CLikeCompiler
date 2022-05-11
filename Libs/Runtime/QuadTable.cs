@@ -1,5 +1,4 @@
 ﻿using CLikeCompiler.Libs.Record.Interface;
-using CLikeCompiler.Libs.Unit.Quad;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using CLikeCompiler.Libs.Enum;
 using CLikeCompiler.Libs.Record.DataRecord;
+using CLikeCompiler.Libs.Unit.Quads;
 
 namespace CLikeCompiler.Libs.Runtime
 {

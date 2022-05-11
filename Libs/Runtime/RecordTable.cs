@@ -7,7 +7,7 @@ using CLikeCompiler.Libs.Enum;
 using CLikeCompiler.Libs.Record.CodeRecord;
 using CLikeCompiler.Libs.Record.DataRecord;
 using CLikeCompiler.Libs.Record.Interface;
-using CLikeCompiler.Libs.Unit.Quad;
+using CLikeCompiler.Libs.Unit.Quads;
 
 namespace CLikeCompiler.Libs.Runtime
 {
