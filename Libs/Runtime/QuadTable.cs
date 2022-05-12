@@ -109,6 +109,16 @@ namespace CLikeCompiler.Libs.Runtime
             }
         }
 
+        internal int IndexOf(Quad quad)
+        {
+            return quadList.IndexOf(quad);
+        }
+
+        internal void Insert(int index, Quad quad)
+        {
+            quadList.Insert(index, quad);
+        }
+
         internal Quad ElemAt(int index)
         {
             if (index < 0 || index >= quadList.Count) { return null; }

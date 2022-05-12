@@ -65,6 +65,16 @@ namespace CLikeCompiler.Libs.Unit.Quads
             return op.StartsWith("Array");
         }
 
+        internal static bool IsCallOp(string op)
+        {
+            return op.StartsWith("Call");
+        }
+
+        internal static bool IsCopyOp(string op)
+        {
+            return op == "mv" || op == "itr";
+        }
+
         internal LabelRecord Label { get; set; }
 
         internal string Name { get; set; } = "";

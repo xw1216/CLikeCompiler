@@ -11,7 +11,7 @@ namespace CLikeCompiler.Libs.Unit.Target
     {
         internal VarRecord Var { get; }
         internal AddrDescriptor Addr { get; }
-        internal ActiveDescriptor Active { get; }
+        internal ActiveDescriptor Active { get; set; }
         internal bool IsCon { get; }
 
         internal VarDescriptor(VarRecord var)

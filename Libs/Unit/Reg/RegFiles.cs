@@ -10,13 +10,27 @@ namespace CLikeCompiler.Libs.Unit.Reg
     internal class RegFiles
     {
         private readonly List<Regs> regs;
+        internal List<Regs> CallerSaveList { get; }
+        internal List<Regs> CalleeSaveList { get; }
 
         internal RegFiles()
         {
             regs = new List<Regs>();
+            CallerSaveList = new List<Regs>();
+            CalleeSaveList = new List<Regs>();
             for (int i = 0; i < RegStdList.Count; i++)
             {
-                regs.Add(new Regs(i));
+                Regs reg = new (i);
+                regs.Add(reg);
+                if (RegNumCallerSaveList.Contains(i))
+                {
+                    CallerSaveList.Add(reg);
+                }
+
+                if (RegNumCalleeSaveList.Contains(i))
+                {
+                    CalleeSaveList.Add(reg);
+                }
             }
         }
 
@@ -117,7 +131,7 @@ namespace CLikeCompiler.Libs.Unit.Reg
             "t6"
         };
 
-        private static readonly List<int> RegCallerSaveList = new()
+        private static readonly List<int> RegNumCallerSaveList = new()
         {
             5,
             6,
@@ -134,7 +148,7 @@ namespace CLikeCompiler.Libs.Unit.Reg
             31
         };
 
-        private static readonly List<int> RegCalleeSaveList = new()
+        private static readonly List<int> RegNumCalleeSaveList = new()
         {
             9,
             18,

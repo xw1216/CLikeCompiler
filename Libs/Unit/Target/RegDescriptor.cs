@@ -7,12 +7,12 @@ namespace CLikeCompiler.Libs.Unit.Target;
 internal class RegDescriptor
 {
     internal Regs Reg { get; }
-    internal List<VarRecord> Vars { get; }
+    internal List<VarDescriptor> Vars { get; }
 
     internal RegDescriptor(Regs reg)
     {
         Reg = reg;
-        Vars = new List<VarRecord>();
+        Vars = new List<VarDescriptor>();
     }
 
 }

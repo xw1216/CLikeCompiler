@@ -16,6 +16,8 @@ namespace CLikeCompiler.Libs.Unit.Target
         internal ActiveDescriptor RhsDescriptor { get; set; }
         internal ActiveDescriptor DstDescriptor { get; set; }
 
+        internal int VarNum { get; set; } = 0;
+
         internal QuadDescriptor() {}
 
         internal QuadDescriptor(Quad quad)

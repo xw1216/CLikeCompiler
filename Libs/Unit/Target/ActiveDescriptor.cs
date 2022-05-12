@@ -10,10 +10,15 @@ namespace CLikeCompiler.Libs.Unit.Target
     internal class ActiveDescriptor
     {
         internal VarDescriptor Var { get; set; } = null;
-        internal Quad NextUseQuad { get; set; } = null;
+        internal QuadDescriptor NextUseQuad { get; set; } = null;
         internal bool IsActive { get; set; } = false;
 
         internal ActiveDescriptor() {}
+
+        internal ActiveDescriptor(VarDescriptor var)
+        {
+            Var = var;
+        }
 
         internal ActiveDescriptor(ActiveDescriptor descriptor)
         {

@@ -26,8 +26,8 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
         internal Quad QuadEnd { get; set; } = null;
 
         // 经过寄存器分配后 函数实际使用的寄存器
-        internal List<Regs> UsedRegList { get; set; }
-        internal List<Regs> SaveRegList { get; set; }
+        internal List<Regs> UsedRegList { get; } = new();
+        internal List<Regs> SaveRegList { get; private set; }
 
         // 局部变量总长度
         internal int VarLength { get; private set; } = 0;
@@ -150,7 +150,7 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
         /// 计算所有局部变量的位置
         /// </summary>
         /// <remarks>
-        ///  分配寄存器后才能调用
+        ///  分配寄存器，消除无关变量后才能调用 
         /// </remarks>
         private void CalcuVarsPlace()
         {
@@ -188,7 +188,7 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
                 data.Offset = offset;
             }
 
-            ArgLength = Math.Abs(offset) - SaveLength;
+            VarLength = Math.Abs(offset) - SaveLength;
         }
     }
 }

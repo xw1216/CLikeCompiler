@@ -67,7 +67,12 @@ namespace CLikeCompiler.Libs.Runtime
             currentFunc = null;
             isFuncScopeSkip = false;
         }
-        
+
+        internal List<FuncRecord> GetFuncList()
+        {
+            return funcTable;
+        }
+
         #endregion
 
 

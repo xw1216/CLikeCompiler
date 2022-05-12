@@ -16,8 +16,8 @@ namespace CLikeCompiler.Libs.Unit.Target
 
         internal List<BasicBlock> NextBlocks { get; }
 
-        internal readonly List<VarRecord> inActiveList = new();
-        internal readonly List<VarRecord> outActiveList = new();
+        internal List<VarRecord> inActiveList = new();
+        internal List<VarRecord> outActiveList = new();
         internal readonly List<VarRecord> useVarList;
         internal readonly List<VarRecord> defVarList;
 
@@ -45,6 +45,7 @@ namespace CLikeCompiler.Libs.Unit.Target
 
         #region Var Descriptor
 
+        // 创建基本块内所有变量（含临时变量）对应的描述符对象
         private List<VarDescriptor> CreateVarDescriptorList(List<QuadDescriptor> block) 
         {
             List<VarDescriptor> descriptorList = new();
@@ -58,12 +59,18 @@ namespace CLikeCompiler.Libs.Unit.Target
             return descriptorList;
         }
 
+        // 检测记录类型 是变量则不重复地记录 use, def 性质，创建对应描述符
         private void DetectVarRecord(
             List<VarDescriptor> descriptorList, List<VarRecord> varList, 
             List<VarRecord> refList, List<VarRecord> defList,
             IRecord rec, bool isDst)
         {
             if (rec is not VarRecord unit)
+            {
+                return;
+            }
+
+            if (unit is ConsVarRecord)
             {
                 return;
             }
@@ -95,6 +102,18 @@ namespace CLikeCompiler.Libs.Unit.Target
         {
             if(list.Contains(unit)) { return; }
             list.Add(unit);
+        }
+
+        internal VarDescriptor FindVarDescriptor(VarRecord rec)
+        {
+            foreach (VarDescriptor descriptor in VarList)
+            {
+                if (descriptor.Var == rec)
+                {
+                    return descriptor;
+                }
+            }
+            return null;
         }
 
         #endregion
@@ -136,6 +155,25 @@ namespace CLikeCompiler.Libs.Unit.Target
         }
 
         #endregion
+
+        #region Active Info
+
+        // 初始化出口活跃变量
+        // 需要在流图关系计算完后才能调用
+        internal void InitOutActiveVars()
+        {
+            for (int i = 0; i < outActiveList.Count; i++)
+            {
+                VarDescriptor descriptor = FindVarDescriptor(outActiveList[i]);
+                if (descriptor != null)
+                {
+                    descriptor.Active.IsActive = true;
+                }
+            }
+        }
+
+        #endregion
+
 
     }
 }

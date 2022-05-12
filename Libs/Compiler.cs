@@ -44,6 +44,7 @@ namespace CLikeCompiler.Libs
         private Compiler()
         {
             RegisterComponents();
+            InitRelation();
             Term.Init();
         }
 
@@ -64,8 +65,14 @@ namespace CLikeCompiler.Libs
             quadTable = new QuadTable();
 
             resFile = new ResourceLoader("Res");
+        }
 
+        private void InitRelation()
+        {
             midGen.SetTable(quadTable, recordTable);
+            optimize.SetQuadTable(quadTable);
+            optimize.SetRegFiles(regFiles);
+            optimize.SetFuncList(recordTable.GetFuncList());
         }
 
         public static void ResetCompiler()
