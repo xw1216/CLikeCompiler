@@ -73,6 +73,24 @@ namespace CLikeCompiler.Libs.Runtime
             return funcTable;
         }
 
+        internal List<CallRecord> GetCallList()
+        {
+            return callTable;
+        }
+
+        internal ScopeTable GetGlobalTable()
+        {
+            return globalTable;
+        }
+
+        internal void MarkGlobalDataRecord()
+        {
+            for (int i = 0; i < globalTable.Count; i++)
+            {
+                globalTable[i].IsGlobal = true;
+            }
+        }
+
         #endregion
 
 

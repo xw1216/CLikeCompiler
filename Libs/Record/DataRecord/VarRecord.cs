@@ -17,11 +17,16 @@ namespace CLikeCompiler.Libs.Record.DataRecord
         public VarType Type { get; set; }
         public RecordPos Pos { get; set; }
         public Regs Reg { get; set; }
+        public bool IsGlobal { get; set; }
 
         internal VarRecord() { }
 
         internal VarRecord(string name, VarType type)
-        { this.Name = name; this.Type = type; }
+        {
+            this.Name = name;
+            this.Type = type;
+            this.IsGlobal = false;
+        }
 
         internal virtual bool IsTemp() { return false; }
         internal virtual bool IsCons() { return false; }

@@ -44,6 +44,11 @@ namespace CLikeCompiler.Libs.Runtime
             }
         }
 
+        internal List<Quad> GetQuadList()
+        {
+            return quadList;
+        }
+
         internal List<Quad> GetQuadBetween(int start, int end)
         {
             List<Quad> quads = new();

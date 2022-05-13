@@ -18,6 +18,7 @@ namespace CLikeCompiler.Libs.Record.DataRecord
             this.Name = "~Con" + conCnt;
             conCnt++;
             Pos = Enum.RecordPos.DATA;
+            IsGlobal = true;
         }
 
         internal ConsVarRecord(VarType type)
@@ -26,6 +27,7 @@ namespace CLikeCompiler.Libs.Record.DataRecord
             conCnt++;
             Pos = Enum.RecordPos.DATA;
             Type = type;
+            IsGlobal = true;
         }
 
         internal override bool IsCons() { return true; }

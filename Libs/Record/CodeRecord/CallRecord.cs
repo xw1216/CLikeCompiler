@@ -19,6 +19,8 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
         internal List<Regs> SaveRegList { get; private set; }
         internal List<VarRecord> ArgsList { get; set; }
 
+        internal int CallLength => SaveRegList.Count * FuncRecord.Dword + Callee.ArgLength;
+
 
         public CallRecord(FuncRecord caller, FuncRecord callee)
         {

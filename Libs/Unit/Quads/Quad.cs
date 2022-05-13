@@ -6,75 +6,6 @@ namespace CLikeCompiler.Libs.Unit.Quads
 {
     public class Quad
     {
-        public static readonly List<string> QuadStdOp = new()
-        {
-            "add",
-            "addi",
-            "sub",
-            "mul",
-            "div",
-            "itr",
-            "mv"
-        };
-
-        public static readonly List<string> QuadJumpOp = new()
-        {
-            "j",
-            "jal",
-            "jr",
-            "bnez",
-            "beq",
-            "bne",
-            "blt",
-            "bge"
-        };
-
-        public static readonly List<string> QuadAbbrOp = new()
-        {
-            "CalleeEntry",
-            "CalleeSave",
-            "CalleeRestore",
-            "CalleeExit",
-            "CallerEntry",
-            "CallerSave",
-            "CallerArgs",
-            "CallerRestore",
-            "CallerExit",
-            "ArrayOffset",
-            "ArrayLoad",
-            "ArrayStore"
-        };
-
-        internal static bool IsLegalOp(string op)
-        {
-            return QuadStdOp.Contains(op) || QuadAbbrOp.Contains(op) || QuadJumpOp.Contains(op);
-        }
-
-        internal static bool IsJumpOp(string op)
-        {
-            return QuadJumpOp.Contains(op);
-        }
-
-        internal static bool IsAbbrOp(string op)
-        {
-            return QuadAbbrOp.Contains(op);
-        }
-
-        internal static bool IsArrayOp(string op)
-        {
-            return op.StartsWith("Array");
-        }
-
-        internal static bool IsCallOp(string op)
-        {
-            return op.StartsWith("Call");
-        }
-
-        internal static bool IsCopyOp(string op)
-        {
-            return op == "mv" || op == "itr";
-        }
-
         internal LabelRecord Label { get; set; }
 
         internal string Name { get; set; } = "";
@@ -95,6 +26,80 @@ namespace CLikeCompiler.Libs.Unit.Quads
         internal string GetDstName()
         {
             return Dst == null ? "-" : Dst.Name;
+        }
+
+        public static readonly List<string> QuadStdOp = new()
+        {
+            "add",
+            "addi",
+            "sub",
+            "mul",
+            "div",
+            "mv",
+            "itr",
+        };
+
+        public static readonly List<string> QuadJumpOp = new()
+        {
+            "j",
+            "jal",
+            "jr",
+            "bnez",
+            "beq",
+            "bne",
+            "blt",
+            "bge",
+        };
+
+        public static readonly List<string> QuadCallOp = new()
+        {
+            "CalleeEntry",
+            "CalleeSave",
+            "CalleeRestore",
+            "CalleeExit",
+            "CallerEntry",
+            "CallerSave",
+            "CallerArgs",
+            "CallerRestore",
+            "CallerExit",
+        };
+
+        public static readonly List<string> QuadMemOp = new()
+        {
+            "Load",
+            "Store",
+            "LoadAddr",
+            "ArrayOffset",
+            "ld",
+            "st",
+        };
+
+        internal static bool IsLegalOp(string op)
+        {
+            return QuadStdOp.Contains(op) 
+                   || QuadCallOp.Contains(op) 
+                   || QuadJumpOp.Contains(op) 
+                   || QuadMemOp.Contains(op);
+        }
+
+        internal static bool IsJumpOp(string op)
+        {
+            return QuadJumpOp.Contains(op);
+        }
+
+        internal static bool IsCallOp(string op)
+        {
+            return QuadCallOp.Contains(op);
+        }
+
+        internal static bool IsCopyOp(string op)
+        {
+            return op is "mv" or "itr";
+        }
+
+        internal static bool IsMemOp(string op)
+        {
+            return QuadMemOp.Contains(op);
         }
 
     }

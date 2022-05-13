@@ -24,6 +24,7 @@ namespace CLikeCompiler.Libs.Record.DataRecord
         public RecordPos Pos { get; set; }
         public int Offset { get; set; }
         public Regs Reg { get; set; }
+        public bool IsGlobal { get; set; }
 
         internal int Dim
         {

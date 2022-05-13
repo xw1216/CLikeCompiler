@@ -70,9 +70,8 @@ namespace CLikeCompiler.Libs
         private void InitRelation()
         {
             midGen.SetTable(quadTable, recordTable);
-            optimize.SetQuadTable(quadTable);
-            optimize.SetRegFiles(regFiles);
-            optimize.SetFuncList(recordTable.GetFuncList());
+            optimize.InitExternalComponents(regFiles, quadTable, recordTable.GetFuncList());
+            targetGen.InitExternalComponents(regFiles, quadTable, recordTable);
         }
 
         public static void ResetCompiler()
@@ -175,6 +174,7 @@ namespace CLikeCompiler.Libs
                 string tips = (isGramCorrect ? "分析完成" : "语法分析完成，发现错误");
                 Compiler.Instance().ReportBackInfo(this,
                         new LogReportArgs(LogMsgItem.Type.INFO, tips));
+                recordTable.MarkGlobalDataRecord();
             }
             catch (Exception e)
             {

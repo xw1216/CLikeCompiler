@@ -1833,9 +1833,13 @@ namespace CLikeCompiler.Libs.Component
              */
             quadTable.GenQuad("CallerExit", null, null, callRecord);
 
+            Regs reg = Compiler.regFiles.FindRegs("a0");
+
             VarTempRecord record = recordTable.CreateTempVarRecord(func.ReturnType);
             record.Pos = RecordPos.REG;
             record.Reg = Compiler.regFiles.FindRegs("a0");
+
+            quadTable.GenQuad("mv", reg, null, record);
 
             backProp.entry = record;
             return true;
@@ -2064,14 +2068,30 @@ namespace CLikeCompiler.Libs.Component
             return dstVar;
         }
 
-        private void UpdateArrayPtrOffset(ArrayRecord arrayRecord,  VarRecord indexRecord)
+        private void UpdateArrayPtrOffset(ArrayRecord arrayRecord,  VarRecord dstRecord)
         {
+            // 栈内数组
             /* dstRec 修正元素偏移量
              * add dstRec, dstRec, fp
              * add dstRec, dstRec, arrayRec.offset
-            */
-            quadTable.GenQuad("add", indexRecord, Compiler.regFiles.FindRegs("fp"), indexRecord);
-            quadTable.GenQuad("ArrayOffset", arrayRecord, null , indexRecord);
+             */
+            if(!(recordTable.GetGlobalTable().ContainsRecord(arrayRecord)))
+            {
+                quadTable.GenQuad("add", dstRecord, Compiler.regFiles.FindRegs("fp"), dstRecord);
+                quadTable.GenQuad("ArrayOffset", arrayRecord, null , dstRecord);
+            }
+            // 全局数组
+            else
+            {
+                /*
+                 * lui tp, %hi(arr)
+                 * addi tp, %lo(arr)
+                 * add dstRec, tp, dstRec
+                 */
+                Regs addrReg = Compiler.regFiles.FindRegs("tp");
+                quadTable.GenQuad("LoadAddr", arrayRecord, null, addrReg);
+                quadTable.GenQuad("add", dstRecord, addrReg, dstRecord);
+            }
         }
 
         private VarRecord GetArrayElem(ArrayRefRecord arrayRef)
@@ -2080,7 +2100,9 @@ namespace CLikeCompiler.Libs.Component
              * mv srcVar, (dstRec)
              */
             VarTempRecord srcVar = recordTable.CreateTempVarRecord(arrayRef.RefArray.Type);
-            quadTable.GenQuad("ArrayLoad", arrayRef.RefIndex, null , srcVar);
+            // 需要传递类型信息 
+            TypeRecord typeRecord = new(arrayRef.RefArray.Type);
+            quadTable.GenQuad("Load", arrayRef.RefIndex, typeRecord , srcVar);
             return srcVar;
         }
 
@@ -2214,7 +2236,8 @@ namespace CLikeCompiler.Libs.Component
              * 随后使用
              * mv (arrayRecord.refIndex), rhsRecord 
              */
-            quadTable.GenQuad("ArrayStore", rhsRecord, null, arrayRecord.RefIndex);
+            TypeRecord typeRecord = new(arrayRecord.RefArray.Type);
+            quadTable.GenQuad("Store", rhsRecord, typeRecord, arrayRecord.RefIndex);
             return true;
         }
         #endregion

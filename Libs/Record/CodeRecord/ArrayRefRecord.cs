@@ -9,7 +9,7 @@ using CLikeCompiler.Libs.Record.Interface;
 
 namespace CLikeCompiler.Libs.Record.CodeRecord
 {
-    internal class ArrayRefRecord : IRecord
+    internal class ArrayRefRecord
     {
         public string Name { get; set; }
 

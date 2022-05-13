@@ -17,6 +17,8 @@ namespace CLikeCompiler.Libs.Record.Interface
         int Offset { get; set; }    // 栈内相对于 fp 的限制
         Regs Reg { get; set; }   // 如果存储在寄存器中 则具体位置
 
+        bool IsGlobal { get; set; }
+
         static int GetWidth(VarType type)
         {
             return type switch

@@ -1,13 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using CLikeCompiler.Libs.Record.DataRecord;
-using CLikeCompiler.Libs.Record.Interface;
-using CLikeCompiler.Libs.Unit.Quads;
+﻿using CLikeCompiler.Libs.Unit.Quads;
 
-namespace CLikeCompiler.Libs.Unit.Target
+namespace CLikeCompiler.Libs.Unit.Descriptor
 {
     internal class QuadDescriptor
     {

@@ -16,6 +16,7 @@ namespace CLikeCompiler.Libs.Record.DataRecord
             Name = "~Tmp" + tmpCnt;
             tmpCnt++;
             Pos = Enum.RecordPos.MEM;
+            IsGlobal = false;
         }
 
         internal VarTempRecord(VarType type)
@@ -24,6 +25,7 @@ namespace CLikeCompiler.Libs.Record.DataRecord
             tmpCnt++;
             Pos = Enum.RecordPos.MEM;
             Type = type;
+            IsGlobal = false;
         }
 
         internal override bool IsTemp() { return true; }

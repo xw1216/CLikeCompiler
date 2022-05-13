@@ -1,8 +1,7 @@
 ﻿using System.Collections.Generic;
-using CLikeCompiler.Libs.Record.DataRecord;
 using CLikeCompiler.Libs.Unit.Reg;
 
-namespace CLikeCompiler.Libs.Unit.Target;
+namespace CLikeCompiler.Libs.Unit.Descriptor;
 
 internal class RegDescriptor
 {

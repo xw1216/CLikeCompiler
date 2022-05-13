@@ -89,6 +89,12 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
             return true;
         }
 
+        internal void CalcuStackLayout()
+        {
+            CalcuSavePlace();
+            CalcuVarsPlace();
+        }
+
         private void CalcuArgPlace()
         {
             ArgLength = 0;
@@ -189,6 +195,28 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
             }
 
             VarLength = Math.Abs(offset) - SaveLength;
+        }
+
+
+        internal void CleanTempVar(List<VarRecord> varList)
+        {
+            List<ScopeTable> tableList = new() { LocalTable };
+
+            while (tableList.Count != 0)
+            {
+                ScopeTable tableNow = tableList[0];
+                tableList.RemoveAt(0);
+
+                for (int i = 0; i < tableNow.Children.Count; i++)
+                {
+                    tableList.Add(tableNow.Children[i]);
+                }
+
+                for (int i = 0; i < varList.Count; i++)
+                {
+                    tableNow.Remove(varList[i]);
+                }
+            }
         }
     }
 }

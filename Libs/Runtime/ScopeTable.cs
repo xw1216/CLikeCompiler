@@ -21,6 +21,11 @@ namespace CLikeCompiler.Libs.Runtime
             set => records[i] = value;
         }
 
+        internal bool Remove(IDataRecord rec)
+        {
+            return records.Remove(rec);
+        }
+
         internal void Clear()
         {
             Parent = null;

@@ -15,6 +15,7 @@ namespace CLikeCompiler.Libs.Enum
         REGS,
         IMM,
         CALL,
+        TYPE,
         ARRAYREF
     }
 }
