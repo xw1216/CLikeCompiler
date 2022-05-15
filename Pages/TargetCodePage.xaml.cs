@@ -23,9 +23,16 @@ namespace CLikeCompiler.Pages
     /// </summary>
     public sealed partial class TargetCodePage : Page
     {
+
+
+
+
         public TargetCodePage()
         {
             this.InitializeComponent();
         }
+
+
+
     }
 }

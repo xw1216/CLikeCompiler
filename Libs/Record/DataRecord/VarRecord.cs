@@ -17,6 +17,9 @@ namespace CLikeCompiler.Libs.Record.DataRecord
         public VarType Type { get; set; }
         public RecordPos Pos { get; set; }
         public Regs Reg { get; set; }
+
+        public int Length => Width;
+
         public bool IsGlobal { get; set; }
 
         internal VarRecord() { }

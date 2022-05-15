@@ -130,6 +130,11 @@ namespace CLikeCompiler.Libs.Runtime
             return quadList[index];
         }
 
+        internal bool Remove(Quad quad)
+        { 
+            return quadList.Remove(quad);
+        }
+
         internal void Clear()
         {
             quadList.Clear();

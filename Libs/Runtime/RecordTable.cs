@@ -83,6 +83,11 @@ namespace CLikeCompiler.Libs.Runtime
             return globalTable;
         }
 
+        internal ScopeTable GetConsTable()
+        {
+            return consTable;
+        }
+
         internal void MarkGlobalDataRecord()
         {
             for (int i = 0; i < globalTable.Count; i++)
@@ -298,10 +303,10 @@ namespace CLikeCompiler.Libs.Runtime
                     consVar.Val = long.Parse(cont);
                     return;
                 case VarType.CHAR:
-                    consVar.Val = char.Parse(cont);
+                    consVar.Val = Convert.ToInt32(char.Parse(cont));
                     return;
                 case VarType.BOOL:
-                    consVar.Val = bool.Parse(cont);
+                    consVar.Val = Convert.ToInt32(bool.Parse(cont)) ;
                     return;
                 case VarType.VOID:
                     break;

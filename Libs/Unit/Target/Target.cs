@@ -9,13 +9,31 @@ namespace CLikeCompiler.Libs.Unit.Target
     internal class Target
     {
         internal string Op { get; set; }
-        internal List<string> Args { get; } = new();
+        internal List<string> Args { get; }
+        internal bool IsLabel { get; set; }
+
+        internal Target()
+        {
+            Args = new List<string>();
+            IsLabel = false;
+        }
+
+        internal Target(string op, params string[] args)
+        {
+            Op = op;
+            Args = new List<string>(args);
+            IsLabel = false;
+        }
 
         public override string ToString()
         {
             StringBuilder builder = new ();
             builder.Append(Op);
-            builder.Append("\t");
+
+            if (Args.Count > 0)
+            {
+                builder.Append('\t');
+            }
 
             for (int i = 0; i < Args.Count; i++)
             {

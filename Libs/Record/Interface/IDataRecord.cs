@@ -16,6 +16,7 @@ namespace CLikeCompiler.Libs.Record.Interface
         RecordPos Pos { get; set; } // 实际存储的位置
         int Offset { get; set; }    // 栈内相对于 fp 的限制
         Regs Reg { get; set; }   // 如果存储在寄存器中 则具体位置
+        int Length { get; }
 
         bool IsGlobal { get; set; }
 

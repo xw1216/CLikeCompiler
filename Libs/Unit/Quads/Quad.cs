@@ -35,6 +35,7 @@ namespace CLikeCompiler.Libs.Unit.Quads
             "sub",
             "mul",
             "div",
+            "lui",
             "mv",
             "itr",
         };

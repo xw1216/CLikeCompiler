@@ -49,7 +49,7 @@ namespace CLikeCompiler.Libs.Component
 
         private void DetermineFunc(FuncRecord funcRecord)
         {
-            Reset();            
+            ResetOptimize();            
 
             func = funcRecord;
             List<Quad> funcQuadList = GetQuadsBetween(func.QuadStart, func.QuadEnd, true);
@@ -63,7 +63,7 @@ namespace CLikeCompiler.Libs.Component
             CleanTempVar();
         }
 
-        private void Reset()
+        internal void ResetOptimize()
         {
             ClearRegDescriptorVars();
             basicBlockList.Clear();
@@ -510,13 +510,12 @@ namespace CLikeCompiler.Libs.Component
         private void PostDispatcherStore(BasicBlock block)
         {
             // 确定 CalleeRestore 句的位置
-            int targetIndex = quadTable.IndexOf(func.QuadEnd);
+            int targetIndex = quadTable.IndexOf(block.QuadList.Last().ToQuad);
             if (targetIndex == -1)
             {
-                SendBackMessage("找不到函数出口语句", LogMsgItem.Type.ERROR);
+                SendBackMessage("找不到基本块出口语句", LogMsgItem.Type.ERROR);
                 throw new ElementNotAvailableException();
             }
-            targetIndex--;
 
             for (int i = 0; i < block.outActiveList.Count; i++)
             {

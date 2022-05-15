@@ -35,7 +35,7 @@ namespace CLikeCompiler.Libs.Record.DataRecord
             }
         }
 
-        internal int Length
+        public int Length
         {
             get
             {

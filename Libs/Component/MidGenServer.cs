@@ -392,7 +392,6 @@ namespace CLikeCompiler.Libs.Component
         #region No.6 FuncDeclare
 
         // 6. FuncDeclare -> lpar FormParam S1 rpar S2 StateBlock S3
-        // TODO 记录函数四元式开始与结束位置
         private void FuncDeclarePushCtrl()
         {
             StackTopProp(out dynamic funcDeclareProp);
@@ -2043,20 +2042,24 @@ namespace CLikeCompiler.Libs.Component
 
             VarTempRecord dstVar = recordTable.CreateTempVarRecord(VarType.LONG);
             VarTempRecord indexVar = recordTable.CreateTempVarRecord(VarType.LONG);
-            ImmRecord index = new ("index", 0);
+            
             Regs zero = Compiler.regFiles.FindRegs("zero");
 
             if (arrayRecord.Dim == 1)
             {
+                ImmRecord index = new ("index", 0);
                 quadTable.GenQuad("addi", indexList[0], index, dstVar);
             }
             else
             {
-                quadTable.GenQuad("and", zero, dstVar, dstVar);
+                quadTable.GenQuad("add", zero, dstVar, dstVar);
                 for (int i = 0; i < indexList.Count - 1; i++)
                 {
-                    index.Value = arrayRecord.GetDimLen(i + 1);
-                    quadTable.GenQuad("addi", zero, index, indexVar);
+                    // 需要支持大下标数组 那么需要将立即数拆分为 20bit 与 12 bit 的 16 进制数
+                    // lui indexVar, 0x12345
+                    // addi indexVar, 0x123
+                    
+                    LargeIndexLoadQuadGen(arrayRecord.GetDimLen(i + 1),  indexVar);
                     quadTable.GenQuad("mul", i == 0 ? indexList[0] : dstVar, indexVar, dstVar);
                     quadTable.GenQuad("add", dstVar, indexList[i + 1], dstVar);
                 }
@@ -2066,6 +2069,25 @@ namespace CLikeCompiler.Libs.Component
             quadTable.GenQuad("mul", dstVar, indexVar, dstVar);
             UpdateArrayPtrOffset(arrayRecord, dstVar);
             return dstVar;
+        }
+
+        private void LargeIndexLoadQuadGen(int index, VarRecord indexVar )
+        {
+            Regs zero = Compiler.regFiles.FindRegs("zero");
+            if (index is < 2048 and >= -2048)
+            {
+                ImmRecord immRecord = new ("index", index);
+                quadTable.GenQuad("addi", zero, immRecord, indexVar);
+            }
+            else
+            {
+                int hi = (index >> 12) & 0x000F_FFFF;
+                int lo = index & 0x0000_0FFF;
+                ImmRecord hiRecord = new("indexHi", "0x" + hi.ToString("X"));
+                ImmRecord loRecord = new("indexLo", "0x" + lo.ToString("X"));
+                quadTable.GenQuad("lui", hiRecord, null, indexVar);
+                quadTable.GenQuad("addi", indexVar, loRecord, indexVar);
+            }
         }
 
         private void UpdateArrayPtrOffset(ArrayRecord arrayRecord,  VarRecord dstRecord)

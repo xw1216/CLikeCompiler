@@ -81,6 +81,8 @@ namespace CLikeCompiler.Libs
             parser.ResetGramParser();
             gram.ResetGramServer();
             midGen.ResetMidGenServer();
+            optimize.ResetOptimize();
+            targetGen.ResetTargetGen();
 
             // MainWindow.GetInstance().SetDefaultRootPath();
         }
@@ -171,15 +173,15 @@ namespace CLikeCompiler.Libs
             bool isGramCorrect;
             try { 
                 isGramCorrect = gram.StartGramAnaly();
-                string tips = (isGramCorrect ? "分析完成" : "语法分析完成，发现错误");
-                Compiler.Instance().ReportBackInfo(this,
+                string tips = (isGramCorrect ? "语法分析完成" : "语法分析完成，发现错误");
+                ReportBackInfo(this,
                         new LogReportArgs(LogMsgItem.Type.INFO, tips));
                 recordTable.MarkGlobalDataRecord();
             }
             catch (Exception e)
             {
                 LogReportArgs innerArgs = new(LogMsgItem.Type.ERROR, e.Message);
-                LogReportArgs args = new(LogMsgItem.Type.ERROR, "内部错误，停止语法检查");
+                LogReportArgs args = new(LogMsgItem.Type.ERROR, "语法分析或中间代码内部错误");
                 ReportBackInfo(this, innerArgs);
                 ReportBackInfo(this, args);
                 lex.ResetLex();
@@ -187,6 +189,44 @@ namespace CLikeCompiler.Libs
                 return false;
             }
             return isGramCorrect;
+        }
+
+        private bool StartOptimizeServer()
+        {
+            try
+            {
+                optimize.StartOptimize();
+                string tips = ("寄存器分配与优化完成");
+                ReportBackInfo(this, new LogReportArgs(LogMsgItem.Type.INFO, tips));
+                return true;
+            }
+            catch (Exception e)
+            {
+                LogReportArgs innerArgs = new(LogMsgItem.Type.ERROR, e.Message);
+                LogReportArgs args = new(LogMsgItem.Type.ERROR, "优化器内部错误，停止执行");
+                ReportBackInfo(this, innerArgs);
+                ReportBackInfo(this, args);
+                optimize.ResetOptimize();
+                return false;
+            }
+        }
+
+        private List<string> StartTargetGenServer()
+        {
+            try
+            {
+                List<string> targetCodeList = targetGen.StartCodeGen();
+                ReportBackInfo(this, new LogReportArgs(LogMsgItem.Type.INFO, "目标代码生成完成"));
+                return targetCodeList;
+            }
+            catch (Exception e)
+            {
+                LogReportArgs innerArgs = new(LogMsgItem.Type.ERROR, e.Message);
+                LogReportArgs args = new(LogMsgItem.Type.ERROR, "目标代码生成错误，停止生成");
+                ReportBackInfo(this, innerArgs);
+                ReportBackInfo(this, args);
+                return null;
+            }
         }
 
         internal void ReportFrontInfo(object sender, LogReportArgs e)
