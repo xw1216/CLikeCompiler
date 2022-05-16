@@ -31,5 +31,10 @@ namespace CLikeCompiler.Libs.Record.DataRecord
         }
 
         internal override bool IsCons() { return true; }
+
+        public override string ToString()
+        {
+            return Val.ToString();
+        }
     }
 }

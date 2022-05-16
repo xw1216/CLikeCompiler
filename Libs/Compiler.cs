@@ -19,7 +19,7 @@ using CLikeCompiler.Libs.Unit.Reg;
 
 namespace CLikeCompiler.Libs
 {
-    public class Compiler
+    public sealed class Compiler
     {
         private static Compiler compiler = new();
 
@@ -36,10 +36,13 @@ namespace CLikeCompiler.Libs
         internal static MacroTable macroTable;
         internal static RecordTable recordTable;
         internal static QuadTable quadTable;
+        internal static List<string> codeTable;
 
         internal static ResourceLoader resFile;
 
-        public delegate void CompilerReportHandler(object sender, LogReportArgs e);
+        public delegate void CodeTableChangeDelegate();
+
+        public event CodeTableChangeDelegate CodeTableChange;
 
         private Compiler()
         {
@@ -63,6 +66,7 @@ namespace CLikeCompiler.Libs
             macroTable = new MacroTable();
             recordTable = new RecordTable();
             quadTable = new QuadTable();
+            codeTable = new List<string>();
 
             resFile = new ResourceLoader("Res");
         }
@@ -71,7 +75,7 @@ namespace CLikeCompiler.Libs
         {
             midGen.SetTable(quadTable, recordTable);
             optimize.InitExternalComponents(regFiles, quadTable, recordTable.GetFuncList());
-            targetGen.InitExternalComponents(regFiles, quadTable, recordTable);
+            targetGen.InitExternalComponents(regFiles, quadTable, recordTable, codeTable);
         }
 
         public static void ResetCompiler()
@@ -84,7 +88,7 @@ namespace CLikeCompiler.Libs
             optimize.ResetOptimize();
             targetGen.ResetTargetGen();
 
-            // MainWindow.GetInstance().SetDefaultRootPath();
+            // MainWindow.Instance().SetDefaultRootPath();
         }
 
         public static ref Compiler Instance()
@@ -108,6 +112,13 @@ namespace CLikeCompiler.Libs
 
             // Third grammar analysis start, get lexical unit from lex
             if(!StartGramServer()) { return false; }
+
+            if (!StartOptimizeServer()) { return false; }
+
+            if(!StartTargetGenServer()) { return false; }
+
+            LogReportArgs argsSuc = new(LogMsgItem.Type.INFO, "编译成功");
+            ReportBackInfo(this, argsSuc);
 
             return true;
         }
@@ -211,13 +222,13 @@ namespace CLikeCompiler.Libs
             }
         }
 
-        private List<string> StartTargetGenServer()
+        private bool StartTargetGenServer()
         {
             try
             {
-                List<string> targetCodeList = targetGen.StartCodeGen();
+                targetGen.StartCodeGen();
                 ReportBackInfo(this, new LogReportArgs(LogMsgItem.Type.INFO, "目标代码生成完成"));
-                return targetCodeList;
+                return true;
             }
             catch (Exception e)
             {
@@ -225,7 +236,7 @@ namespace CLikeCompiler.Libs
                 LogReportArgs args = new(LogMsgItem.Type.ERROR, "目标代码生成错误，停止生成");
                 ReportBackInfo(this, innerArgs);
                 ReportBackInfo(this, args);
-                return null;
+                return false;
             }
         }
 
@@ -276,6 +287,11 @@ namespace CLikeCompiler.Libs
                 ReportBackInfo(this, new LogReportArgs(LogMsgItem.Type.ERROR, "资源中不存在该字符串："+ key));
             }
             return value;
+        }
+
+        public void OnCodeTableChange()
+        {
+            CodeTableChange?.Invoke();
         }
     }
 }

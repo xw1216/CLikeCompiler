@@ -19,5 +19,10 @@
             this.NextUseQuad = descriptor.NextUseQuad;
             this.IsActive = descriptor.IsActive;
         }
+
+        public override string ToString()
+        {
+            return IsActive ? "(Y)" : "(^)";
+        }
     }
 }

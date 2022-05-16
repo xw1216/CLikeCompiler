@@ -50,7 +50,7 @@ namespace CLikeCompiler.Pages
             picker.FileTypeFilter.Add("*");
             picker.FileTypeFilter.Add(".txt");
 
-            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(MainWindow.GetInstance());
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(MainWindow.Instance());
             WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
             
             Windows.Storage.StorageFile file = await picker.PickSingleFileAsync();
@@ -58,12 +58,12 @@ namespace CLikeCompiler.Pages
             if (file != null)
             {
                 var folder = await file.GetParentAsync();
-                MainWindow.GetInstance().server.SetRootPath(folder.Path);
+                MainWindow.Instance().server.SetRootPath(folder.Path);
                 codeBox.Text = await Windows.Storage.FileIO.ReadTextAsync(file);
             } else
             {
-                MainWindow.GetInstance().SetDefaultRootPath();
-                MainWindow.GetInstance().ShowErrorPage("未能打开代码文件");
+                MainWindow.Instance().SetDefaultRootPath();
+                MainWindow.Instance().ShowNotifyPage("未能打开代码文件");
             }
         }
 
@@ -71,10 +71,10 @@ namespace CLikeCompiler.Pages
         {
             if (infoBar.Severity == InfoBarSeverity.Error)
             {
-                MainWindow.GetInstance().PageTagNavigation("LogPage");
+                MainWindow.Instance().PageTagNavigation("LogPage");
             } else
             {
-                MainWindow.GetInstance().PageTagNavigation("MidCodePage");
+                MainWindow.Instance().PageTagNavigation("MidCodePage");
             }
             infoBar.IsOpen = false;
         }
@@ -83,7 +83,7 @@ namespace CLikeCompiler.Pages
         {
             string src = codeBox.Text;
             CheckCodeEmpty(src);
-            if(MainWindow.GetInstance().server.StartCompile(ref src, codeBox))
+            if(MainWindow.Instance().server.StartCompile(ref src, codeBox))
             {
                 CompileSuccessHandler();
                 
@@ -113,7 +113,7 @@ namespace CLikeCompiler.Pages
         {
             if (code.Trim().Length < 1)
             {
-                MainWindow.GetInstance().ShowErrorPage("请勿置空或输入全为空白字符。", "源码出错");
+                MainWindow.Instance().ShowNotifyPage("请勿置空或输入全为空白字符。", "源码出错");
             }
         } 
 

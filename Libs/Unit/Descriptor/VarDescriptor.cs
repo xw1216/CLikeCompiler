@@ -33,5 +33,9 @@ namespace CLikeCompiler.Libs.Unit.Descriptor
             IsGlobal = var.IsGlobal;
         }
 
+        public override string ToString()
+        {
+            return Var.Name;
+        }
     }
 }

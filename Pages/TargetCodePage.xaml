@@ -9,6 +9,30 @@
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <CommandBar Grid.Row="0" Background="Transparent" IsOpen="False" DefaultLabelPosition="Right">
+            <AppBarButton Icon="Library" Label="代码文件" Click="OpenCodeNotePad">
+                <AppBarButton.KeyboardAccelerators>
+                    <KeyboardAccelerator Modifiers="Control" Key="M" />
+                </AppBarButton.KeyboardAccelerators>
+            </AppBarButton>
+            <CommandBar.SecondaryCommands>
+                <AppBarButton Icon="Delete" Label="清除显示" Click="ClearDisplayClick">
+                </AppBarButton>
+            </CommandBar.SecondaryCommands>
+            <CommandBar.Content>
+                <TextBlock Text="目标代码" FontSize="20" Margin="20,14" VerticalAlignment="Top" />
+            </CommandBar.Content>
+        </CommandBar>
+
+        <TextBlock Grid.Row="1" x:Name="CodeBlock" FontSize="16" Margin="20, 14" 
+                       HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+
+        </TextBlock>
 
     </Grid>
 </Page>

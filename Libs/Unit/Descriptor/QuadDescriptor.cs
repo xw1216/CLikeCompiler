@@ -1,4 +1,5 @@
-﻿using CLikeCompiler.Libs.Unit.Quads;
+﻿using System.Text;
+using CLikeCompiler.Libs.Unit.Quads;
 
 namespace CLikeCompiler.Libs.Unit.Descriptor
 {
@@ -18,5 +19,15 @@ namespace CLikeCompiler.Libs.Unit.Descriptor
             ToQuad = quad;
         }
 
+        public override string ToString()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.Append(ToQuad.Name);
+            builder.Append(' ');
+            builder.Append(ToQuad.GetLhsName() + LhsDescriptor?.ToString() + ", ");
+            builder.Append(ToQuad.GetRhsName() + RhsDescriptor?.ToString() + ", ");
+            builder.Append(ToQuad.GetDstName() + DstDescriptor?.ToString());
+            return builder.ToString();
+        }
     }
 }

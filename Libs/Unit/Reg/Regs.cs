@@ -12,7 +12,6 @@ namespace CLikeCompiler.Libs.Unit.Reg
     {
         public int Index { get; private set; }
         public string Name { get => RegFiles.GetRegName(Index); set {; } }
-        public IRecord Cont { get; set; }
 
         internal Regs(int index)
         {
@@ -22,6 +21,11 @@ namespace CLikeCompiler.Libs.Unit.Reg
         public RecordType GetRecordType()
         {
             return RecordType.REGS;
+        }
+
+        public override string ToString()
+        {
+            return Name;
         }
     }
 }

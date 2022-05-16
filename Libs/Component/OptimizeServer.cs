@@ -53,8 +53,8 @@ namespace CLikeCompiler.Libs.Component
 
             func = funcRecord;
             List<Quad> funcQuadList = GetQuadsBetween(func.QuadStart, func.QuadEnd, true);
-            DivideBasicBlocks(funcQuadList, out Dictionary<Quad, Quad> jumpDict);
-            TopoDataFlow(jumpDict);
+            DivideBasicBlocks(funcQuadList);
+            TopoDataFlow();
 
             CalcuBlockInoutActive();
             CalcuActiveInfo();
@@ -118,19 +118,23 @@ namespace CLikeCompiler.Libs.Component
         private List<Quad> GetQuadsBetween(Quad start, Quad end, bool includeLast)
         {
             List<Quad> quadList = new();
-            int i;
-            for (i = 0; i < quadTable.Count; i++)
+            int startIndex = quadTable.IndexOf(start);
+            int endIndex = quadTable.IndexOf(end);
+
+            if (startIndex == -1 || endIndex == -1)
             {
-                if(quadTable.ElemAt(i) == start) {break;}
+                SendBackMessage("找不到对应四元式", LogMsgItem.Type.ERROR);
+                throw new Exception();
             }
 
-            for (; i < quadList.Count; i++)
+            for (int i = startIndex; i < endIndex; i++)
             {
-                // not include the last
-                if(includeLast && quadTable.ElemAt(i) == end) {break;}
                 quadList.Add(quadTable.ElemAt(i));
-                // include the last
-                if(quadTable.ElemAt(i) == end) {break;}
+            }
+
+            if (includeLast)
+            {
+                quadList.Add(quadTable.ElemAt(endIndex));
             }
             return quadList;
         }
@@ -141,7 +145,7 @@ namespace CLikeCompiler.Libs.Component
             for (int i = 0; i < entryList.Count; i++)
             {
                 bool isSwapped = false;
-                for (int j = 0; i < entryList.Count - 1 - i; j++)
+                for (int j = 0; j < entryList.Count - 1 - i; j++)
                 {
                     if (refList.IndexOf(entryList[j]) <= refList.IndexOf(entryList[j + 1])) continue;
 
@@ -160,34 +164,36 @@ namespace CLikeCompiler.Libs.Component
         }
 
         // 找到基本块入口式
-        private List<Quad> GetEntryList(List<Quad> quadList, out Dictionary<Quad, Quad> jumpDict)
+        private List<Quad> GetEntryList(List<Quad> quadList)
         {
-            List<Quad> entryList = new() { quadList[0] };
-            jumpDict = new Dictionary<Quad, Quad>();
+            List<Quad> entryList = new();
+            // jumpDict = new Dictionary<Quad, Quad>();
 
-            bool isNextEntry = false;
+            bool isNextEntry = true;
             for (int i = 0; i < quadList.Count; i++)
             {
+                Quad quad = quadList[i];
                 if (isNextEntry)
                 {
-                    if (!(entryList.Contains(quadList[i])))
+                    if (!(entryList.Contains(quad)))
                     {
-                        entryList.Add(quadList[i]);
+                        entryList.Add(quad);
                     }
+                    isNextEntry = false;
                 }
 
-                if (!IsJump(quadList[i])) continue;
-                if (quadList[i].Name.Equals("jal") || quadList[i].Name.Equals("jr"))
+                if (!IsJump(quad)) continue;
+                if (quad.Name.Equals("jal") || quad.Name.Equals("jr"))
                 {
                     isNextEntry = true;
                     continue;
                 }
 
-                Quad target = ((LabelRecord)quadList[i].Dst).ToQuad;
+                Quad target = ((LabelRecord)quad.Dst).ToQuad;
                 if (!(entryList.Contains(target)))
                 {
                     // 构建跳转关系 用于构建流图
-                    jumpDict.Add(quadList[i], target);
+                    // jumpDict.Add(quad, target);
                     entryList.Add(target);
                 }
                 isNextEntry = true;
@@ -210,12 +216,12 @@ namespace CLikeCompiler.Libs.Component
         }
 
         // 划分基本块
-        private void DivideBasicBlocks(List<Quad> quadList, out Dictionary<Quad, Quad> jumpDict)
+        private void DivideBasicBlocks(List<Quad> quadList)
         {
             basicBlockList.Clear();
-            List<Quad> entryList = GetEntryList(quadList, out Dictionary<Quad, Quad> jumpMap);
+            List<Quad> entryList = GetEntryList(quadList);
             // 用于构建流图的跳转关系
-            jumpDict = jumpMap;
+            // jumpDict = jumpMap;
 
             // ENTRY 起始空基本块
             basicBlockList.Add(new BasicBlock());
@@ -239,41 +245,53 @@ namespace CLikeCompiler.Libs.Component
         #region Data flow
 
         // 构建流图
-        private void TopoDataFlow(Dictionary<Quad, Quad> jumpMap)
+        private void TopoDataFlow()
         {
             // 直接后继块
             for (var i = 0; i < basicBlockList.Count - 1; i++)
             {
                 BasicBlock block = basicBlockList[i];
-                if (!(block.IsLastJump()))
+                if (!(block.IsLastUnconditionalJump()))
                 {
                     block.NextBlocks.Add(basicBlockList[i+1]);
                 }
             }
 
             // 间接后继块
-            foreach (KeyValuePair<Quad, Quad> pair in jumpMap)
+            for (int i = 0; i < basicBlockList.Count; i++)
             {
-                BasicBlock srcBlock = null, dstBlock = null;
-                for (int i = 0; i < basicBlockList.Count; i++)
+                BasicBlock srcBlock = basicBlockList[i];
+                for (int j = 0; j < srcBlock.QuadList.Count; j++)
                 {
-                    if (!basicBlockList[i].IsQuadIn(pair.Key)) continue;
-                    srcBlock = basicBlockList[i];
-                    break;
-                }
-                
-                for (int i = 0; i < basicBlockList.Count; i++)
-                {
-                    if (!basicBlockList[i].IsStartWith(pair.Value)) continue;
-                    dstBlock = basicBlockList[i];
-                    break;
-                }
-
-                if (srcBlock != null && dstBlock != null)
-                {
+                    QuadDescriptor quad = srcBlock.QuadList[j];
+                    string op = quad.ToQuad.Name;
+                    if (!Quad.IsJumpOp(op) || op == "jal" || op == "jr") continue;
+                    LabelRecord label = (LabelRecord)quad.ToQuad.Dst;
+                    BasicBlock dstBlock = FindJumpTargetBlock(label.ToQuad);
                     srcBlock.NextBlocks.Add(dstBlock);
                 }
             }
+        }
+
+        private BasicBlock FindJumpTargetBlock(Quad targetQuad)
+        {
+            for (int i = 0; i < basicBlockList.Count; i++)
+            {
+                if (!basicBlockList[i].IsStartWith(targetQuad)) continue;
+                return basicBlockList[i];
+            }
+
+            SendBackMessage("找不到跳转目标", LogMsgItem.Type.ERROR);
+            throw new Exception();
+        }
+
+        private void ExchangeJumpLabel(Quad origin, Quad destination)
+        {
+            if (origin.Label == null) {return;}
+
+            origin.Label.ToQuad = destination;
+            destination.Label = origin.Label;
+            origin.Label = null;
         }
 
         #endregion
@@ -290,18 +308,22 @@ namespace CLikeCompiler.Libs.Component
                 // 基本块数一定大于等于 3 
                 for (int i = basicBlockList.Count - 2; i >= 0; i--)
                 {
-                    
                     BasicBlock block = basicBlockList[i];
-                    // Out[B] = In[next_1] U In[next_2] U ...
                     List<VarRecord> outList = new();
+
+                    // Out[B] = In[next_1] U In[next_2] U ...
                     for (int j = 0; j < block.NextBlocks.Count; j++)
                     {
-                        outList = outList.Union(block.inActiveList).ToList();
+                        outList = outList.Union(block.NextBlocks[j].inActiveList).ToList();
                     }
                     block.outActiveList = outList;
 
                     // In[B] = use U (Out[B] - def)
-                    List<VarRecord> inList = block.useVarList.Union(block.outActiveList.Except(block.defVarList)).ToList();
+                    List<VarRecord> inList = 
+                        block.useVarList.Union(
+                            block.outActiveList.Except(
+                                block.defVarList)).ToList();
+
                     if (IsVarListSame(block.inActiveList, inList)) continue;
                     isAnyInChange = true;
                     block.inActiveList = inList;
@@ -411,6 +433,7 @@ namespace CLikeCompiler.Libs.Component
                     Rhs = null,
                     Dst = func.ArgsList[i]
                 };
+                ExchangeJumpLabel(quadTable.ElemAt(targetIndex), quad);
                 quadTable.Insert(targetIndex, quad);
             }
         }
@@ -436,8 +459,8 @@ namespace CLikeCompiler.Libs.Component
                 ClearRegDescriptorVars();
                 DispatcherBlockRegister(basicBlockList[i]);
                 PostDispatcherStore(basicBlockList[i]);
-                RecordBlockUnusedTempVar(basicBlockList[i]);
             }
+            RecordBlockUnusedTempVar();
         }
 
         private void SaveCalleeUsedReg(RegDescriptor regDescriptor)
@@ -452,54 +475,11 @@ namespace CLikeCompiler.Libs.Component
             for (int i = 0; i < quadsList.Count; i++)
             {
                 QuadDescriptor quad = quadsList[i];
-                string op = quad.ToQuad.Name;
                 
                 if(quad.VarNum < 1) {continue;}
 
                 // 对于语句 op dst, lhs, rhs , 获取 R_dst, R_lhs, R_rhs
-                GetReg(quad, out RegDescriptor lhsRegDescriptor,
-                    out RegDescriptor rhsRegDescriptor, out RegDescriptor dstRegDescriptor);
-
-                // 如果 lhs 不在对应的 R 中，更改描述符，生成 Ld 语句并进行相应关联
-                if (lhsRegDescriptor != null)
-                {
-                    VarLoadHandler(quad, quad.LhsDescriptor.Var, lhsRegDescriptor);
-                    SaveCalleeUsedReg(lhsRegDescriptor);
-                    quad.ToQuad.Lhs = lhsRegDescriptor.Reg;
-                }
-
-                // 对于 mv 与 itr 的复制语句 若有二元则一定处于同寄存器中
-                if (Quad.IsCopyOp(op))
-                {
-                    if (dstRegDescriptor != null)
-                    {
-                        // 此时不强制 var 独占 reg
-                        dstRegDescriptor.Vars.Add(quad.DstDescriptor.Var);
-                        AddrDescriptor dstAddrDescriptor = quad.DstDescriptor.Var.Addr;
-                        dstAddrDescriptor.InReg = true;
-                        dstAddrDescriptor.RegAt = dstRegDescriptor;
-                        dstAddrDescriptor.InMem = false;
-                        SaveCalleeUsedReg(dstRegDescriptor);
-                    }
-                }
-                else
-                {
-                    // 继续判断 rhs 的位置并更改描述符，生成 Ld
-                    if (rhsRegDescriptor != null)
-                    {
-                        VarLoadHandler(quad, quad.RhsDescriptor.Var, rhsRegDescriptor);
-                        SaveCalleeUsedReg(rhsRegDescriptor);
-                        quad.ToQuad.Rhs = rhsRegDescriptor.Reg;
-                    }
-
-                    // dst 目前暂存在 reg 中，需要更改描述符，并抹除 MEM 记录
-                    if (dstRegDescriptor != null)
-                    {
-                        quad.ToQuad.Dst = dstRegDescriptor.Reg;
-                        RegMonopolizeByVar(dstRegDescriptor, quad.DstDescriptor.Var, true);
-                        SaveCalleeUsedReg(dstRegDescriptor);
-                    }
-                }
+                GetReg(block, quad);
             }
         }
 
@@ -546,6 +526,7 @@ namespace CLikeCompiler.Libs.Component
                     Rhs = new TypeRecord(var.Var.Type),
                     Dst = addrReg
                 };
+                ExchangeJumpLabel(quadTable.ElemAt(targetIndex), storeQuad);
                 quadTable.Insert(targetIndex, storeQuad);
 
                 InsertLoadAddr(var, targetIndex);
@@ -559,6 +540,7 @@ namespace CLikeCompiler.Libs.Component
                     Rhs = null,
                     Dst = var.Var,
                 };
+                ExchangeJumpLabel(quadTable.ElemAt(targetIndex), targetQuad);
                 quadTable.Insert(targetIndex, targetQuad);
             }
         }
@@ -577,6 +559,7 @@ namespace CLikeCompiler.Libs.Component
                 Rhs = null,
                 Dst = addrReg
             };
+            ExchangeJumpLabel(quadTable.ElemAt(targetIndex), loadAddrQuad);
             quadTable.Insert(targetIndex, loadAddrQuad);
         }
 
@@ -584,6 +567,8 @@ namespace CLikeCompiler.Libs.Component
         {
             // 管理描述符 并使得 reg 被 var 独占
             RegMonopolizeByVar(reg, var);
+
+            // 插入对应的 Load 指令
             int targetIndex = quadTable.IndexOf(quad.ToQuad);
             if (targetIndex == -1)
             {
@@ -603,6 +588,7 @@ namespace CLikeCompiler.Libs.Component
                     Rhs = new TypeRecord(var.Var.Type),
                     Dst = reg.Reg
                 };
+                ExchangeJumpLabel(quadTable.ElemAt(targetIndex), loadQuad);
                 quadTable.Insert(targetIndex, loadQuad);
                 
                 InsertLoadAddr(var, targetIndex);
@@ -617,6 +603,7 @@ namespace CLikeCompiler.Libs.Component
                     Rhs = null,
                     Dst = reg.Reg
                 };
+                ExchangeJumpLabel(quadTable.ElemAt(targetIndex), targetQuad);
                 quadTable.Insert(targetIndex, targetQuad);
             }
         }
@@ -625,20 +612,23 @@ namespace CLikeCompiler.Libs.Component
         {
             // 清除该寄存器内所有其他变量关系
             RemoveOtherVarInReg(reg);
+
+            // 设置寄存器位置
             reg.Vars.Add(var);
-            var.Addr.InReg = true;
             var.Addr.RegAt = reg;
+            var.Addr.InReg = true;
+
             // 当为 Dst 时 还需要地址描述符不含 Mem 位置
             if (isDst)
             {
                 var.Addr.InMem = false;
             }
 
+            // 如果是常量 那么一直在 mem 中
             if (var.IsCon)
             {
                 var.Addr.InMem = true;
             }
-
         }
 
         private void RemoveOtherVarInReg(RegDescriptor reg)
@@ -656,10 +646,85 @@ namespace CLikeCompiler.Libs.Component
 
         #region Get Reg
 
+        private RegDescriptor GetRegLhs(BasicBlock block, QuadDescriptor quad, VarDescriptor lhsVar, VarDescriptor rhsVar, VarDescriptor dstVar) 
+        {
+            RegDescriptor lhsReg = GetRegForSingleVar(block, quad, lhsVar, rhsVar, dstVar);
+
+            if(lhsReg == null) return null;
+            quad.ToQuad.Lhs = lhsReg.Reg;
+
+            // lhs 已经在 R 中 直接返回
+            if (lhsReg == lhsVar.Addr.RegAt) return lhsReg;
+
+            // 如果 lhs 不在对应的 R 中，更改描述符，生成 Ld 语句并进行相应关联
+            SaveCalleeUsedReg(lhsReg);
+            VarLoadHandler(quad, quad.LhsDescriptor.Var, lhsReg);
+            
+            return lhsReg;
+        }
+
+        private RegDescriptor GetRegRhs(BasicBlock block, QuadDescriptor quad, VarDescriptor lhsVar, VarDescriptor rhsVar, VarDescriptor dstVar)
+        {
+            // 选择 rhs 的寄存器
+            RegDescriptor rhsReg = GetRegForSingleVar(block, quad, rhsVar, lhsVar, dstVar);
+
+            if(rhsReg == null) return null;
+            quad.ToQuad.Rhs = rhsReg.Reg;
+
+            // rhs 已经在 R 中 直接返回
+            if(rhsReg == rhsVar.Addr.RegAt) return rhsReg;
+            // 继续判断 rhs 的位置并更改描述符，生成 Ld
+            SaveCalleeUsedReg(rhsReg);
+            VarLoadHandler(quad, quad.RhsDescriptor.Var, rhsReg);
+            return rhsReg;
+        }
+
+        private void GetRegCopyOpHandler(BasicBlock block, QuadDescriptor quad, VarDescriptor lhsVar, VarDescriptor dstVar, RegDescriptor lhsReg)
+        {
+            if (lhsVar == null && dstVar == null)
+            {
+                SendBackMessage("无法识别的复制语句", LogMsgItem.Type.ERROR);
+                throw new Exception();
+            }
+
+            // dst 为空 无需处理
+            if (dstVar == null) { return; }
+
+            RegDescriptor dstReg;
+            // 仅有 dst 需要寄存器
+            if (lhsVar == null)
+            {
+                dstReg = GetRegForSingleVar(block, quad, dstVar, null, null, true);
+                if(dstReg == null) return;
+                quad.ToQuad.Dst = dstReg.Reg;
+                SaveCalleeUsedReg(dstReg);
+                RegMonopolizeByVar(dstReg, dstVar, true);
+            }
+            // lhs 不空 且 dst 不空 则让 R_dst = R_lhs 此时不强制 var 独占 reg
+            else
+            {
+                dstReg = lhsReg;
+
+                if (dstVar.Addr.InReg)
+                {
+                    dstVar.Addr.RegAt.Vars.Remove(dstVar);
+                }
+                // 更改四元式
+                quad.ToQuad.Dst = dstReg.Reg;
+                // 更新使用寄存器
+                SaveCalleeUsedReg(dstReg);
+                // 更新寄存器信息
+                dstReg.Vars.Add(quad.DstDescriptor.Var);
+                // 更新变量信息
+                AddrDescriptor dstAddr = quad.DstDescriptor.Var.Addr;
+                dstAddr.InReg = true;
+                dstAddr.RegAt = dstReg;
+                dstAddr.InMem = false;
+            }
+        }
+
         // 完成 Get Reg 函数
-        private void GetReg(
-            QuadDescriptor quad, out RegDescriptor lhsDescriptor, 
-            out RegDescriptor rhsDescriptor, out RegDescriptor dstDescriptor)
+        private void GetReg(BasicBlock block, QuadDescriptor quad)
         {
             VarDescriptor lhsVar = GetVarFromActive(quad.LhsDescriptor);
             VarDescriptor rhsVar = GetVarFromActive(quad.RhsDescriptor);
@@ -671,19 +736,32 @@ namespace CLikeCompiler.Libs.Component
                 throw new ArgumentException();
             }
 
-            // 复制语句 dst = lhs 中确保二者寄存器一致
+            // 选择 lhs 的寄存器
+            RegDescriptor lhsReg = GetRegLhs(block, quad, lhsVar, rhsVar, dstVar);
+
+            // 如果是复制语句 针对 dst 处理
             if (Quad.IsCopyOp(quad.ToQuad.Name))
             {
-                lhsDescriptor = GetRegForSingleVar(quad, lhsVar, rhsVar, dstVar);
-                rhsDescriptor = null;
-                dstDescriptor = lhsDescriptor;
+                // 对于 mv 与 itr 的复制语句 若有二元则一定处于同寄存器中
+                GetRegCopyOpHandler(block, quad, lhsVar, dstVar, lhsReg);
+                return;
             }
 
-            // 分别选择 lhs & rhs 的寄存器
-            lhsDescriptor = GetRegForSingleVar(quad, lhsVar, rhsVar, dstVar);
-            rhsDescriptor = GetRegForSingleVar(quad, rhsVar, lhsVar, dstVar);
-            dstDescriptor = GetRegForSingleVar(quad, dstVar, lhsVar, rhsVar, 
-                true, lhsDescriptor, rhsDescriptor);
+            // 选择 rhs 的寄存器
+            RegDescriptor rhsReg = GetRegRhs(block, quad, lhsVar, rhsVar, dstVar);
+            
+            // 选择 dst 寄存器
+            RegDescriptor dstReg = GetRegForSingleVar(
+                block, quad, 
+                dstVar, lhsVar, rhsVar, 
+                true, lhsReg, rhsReg);
+
+            if (dstReg == null) return;
+
+            // dst 目前暂存在 reg 中，需要更改描述符，并抹除 MEM 记录
+            quad.ToQuad.Dst = dstReg.Reg;
+            SaveCalleeUsedReg(dstReg);
+            RegMonopolizeByVar(dstReg, quad.DstDescriptor.Var, true);
         }
 
         private static VarDescriptor GetVarFromActive(ActiveDescriptor active)
@@ -712,16 +790,16 @@ namespace CLikeCompiler.Libs.Component
             return emptyReg;
         }
 
-        private RegDescriptor GetRegForDstVarShare(VarDescriptor lhsVar, VarDescriptor rhsVar, 
+        private static RegDescriptor GetRegForDstVarShare(VarDescriptor lhsVar, VarDescriptor rhsVar, 
             RegDescriptor lhsReg , RegDescriptor rhsReg ) 
         {
             // lhs 或者 rhs 任意一方在本指令后不再使用 且 R_lhs 或 R_rhs 仅保存了这个变量
-            if (lhsVar != null && lhsReg != null && lhsVar.Active.IsActive == false)
+            if (lhsVar != null && lhsReg != null && lhsVar.Active.IsActive == false && lhsReg.Vars.Count == 1)
             {
                 return lhsReg;
             }
 
-            if (rhsVar != null && rhsReg != null && rhsVar.Active.IsActive == false)
+            if (rhsVar != null && rhsReg != null && rhsVar.Active.IsActive == false && rhsReg.Vars.Count == 1)
             {
                 return rhsReg;
             }
@@ -730,8 +808,7 @@ namespace CLikeCompiler.Libs.Component
         }
 
         // 注意为 dst 分配寄存器时 与 lhs & rhs 有较大的不同
-        private RegDescriptor GetRegForSingleVar(QuadDescriptor quad, 
-            VarDescriptor srcVar, VarDescriptor otherVar, VarDescriptor dstVar, 
+        private RegDescriptor GetRegForSingleVar(BasicBlock block, QuadDescriptor quad, VarDescriptor srcVar, VarDescriptor otherVar, VarDescriptor dstVar, 
             bool isDst = false, RegDescriptor lhsReg = null, RegDescriptor rhsReg = null)
         {
             if (srcVar == null) { return null; }
@@ -773,8 +850,8 @@ namespace CLikeCompiler.Libs.Component
                         if(nowVar == srcVar && nowVar != otherVar && nowVar != dstVar) {continue;}
                     }
                     
-                    // 如果 nowVar 后续不再使用 那么可占用
-                    if (nowVar.Active.IsActive == false) { continue;}
+                    // 如果 nowVar 后续不再使用 且在基本块出口活跃 那么可占用
+                    if (nowVar.Active.IsActive == false && block.outActiveList.Contains(nowVar.Var)) { continue;}
 
                     // 否则该变量需要生成 st 语句 代价增加
                     cost++;
@@ -827,22 +904,46 @@ namespace CLikeCompiler.Libs.Component
 
         #region Temp Var Clean
 
-        private void RecordBlockUnusedTempVar(BasicBlock block)
+        private void RecordBlockUnusedTempVar()
         {
-            for (int i = 0; i < block.VarList.Count; i++)
+            Dictionary<VarRecord, bool> cleanDict = new();
+            for (int i = 0; i < basicBlockList.Count; i++)
             {
-                VarDescriptor var = block.VarList[i];
+                BasicBlock block = basicBlockList[i];
+                for (int j = 0; j < block.VarList.Count; j++)
+                {
+                    VarRecord var = block.VarList[j].Var;
+                    if(!(var.IsTemp())) {continue;}
+                    bool needSpace = block.VarList[j].IsNeedSpace;
+                    
+                    if (cleanDict.ContainsKey(var))
+                    {
+                        if (needSpace)
+                        {
+                            cleanDict[var] = true;
+                        }
+                    }
+                    else
+                    {
+                        cleanDict.Add(var, needSpace);
+                    }
+                }
+            }
 
-                if (!var.IsTemp || var.IsNeedSpace) {continue;}
-                if(tempCleanList.Contains(var.Var)) {continue;}
-                tempCleanList.Add(var.Var);
-            } 
+            foreach (KeyValuePair<VarRecord, bool> pair in cleanDict)
+            {
+                if (!(pair.Value))
+                {
+                    tempCleanList.Add(pair.Key);
+                }
+            }
         }
 
         private void CleanTempVar()
         {
             // 不存在跨函数临时变量 故可以在函数范围内操作
             func.CleanTempVar(tempCleanList);
+            tempCleanList.Clear();
         }
 
         #endregion

@@ -28,6 +28,11 @@ namespace CLikeCompiler.Libs.Unit.Quads
             return Dst == null ? "-" : Dst.Name;
         }
 
+        public override string ToString()
+        {
+            return Name + " \t" + GetLhsName() + ", " + GetRhsName() + ", " + GetDstName();
+        }
+
         public static readonly List<string> QuadStdOp = new()
         {
             "add",

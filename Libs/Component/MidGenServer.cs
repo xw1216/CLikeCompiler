@@ -1329,14 +1329,14 @@ namespace CLikeCompiler.Libs.Component
 
             ImmRecord immTrue = new("true", 1);
             ImmRecord immFalse = new("false", 0);
-            
+             
             ItrDataType(ref lhsEntry, ref  rhsEntry);
             VarRecord resultEntry = recordTable.CreateTempVarRecord(VarType.BOOL);
-
+            Regs zero = Compiler.regFiles.FindRegs("zero");
             Quad opQuad = GenRelopQuad(op, lhsEntry, rhsEntry, out bool jumpTrue);
-            quadTable.GenQuad("mv", jumpTrue ? immFalse : immTrue, null, resultEntry);
+            quadTable.GenQuad("addi", zero,jumpTrue ? immFalse : immTrue,  resultEntry);
             Quad jumpEndQuad = quadTable.GenQuad("j", null, null, null);
-            Quad trueQuad = quadTable.GenQuad("mv", jumpTrue ? immTrue : immFalse, null, resultEntry);
+            Quad trueQuad = quadTable.GenQuad("addi", zero, jumpTrue ? immTrue : immFalse, resultEntry);
 
             recordTable.CreateTmpLabelRecord(trueQuad);
             Quad endQuad = quadTable.NextQuadRef();
@@ -1817,6 +1817,7 @@ namespace CLikeCompiler.Libs.Component
              * l { b | h | w | d } gp, arg8.offset(fp) 
              * s { b | h | w | d } gp, callSize - param8.offset(sp)
              */
+            // todo 需要将 Args 展开显式传入 以便计算活跃信息
             quadTable.GenQuad("CallerArgs", null, null, callRecord);
             /* 实际调用
              * e.g. jal ra, offset
@@ -2052,6 +2053,7 @@ namespace CLikeCompiler.Libs.Component
             }
             else
             {
+                // todo 修正 dstVar 无意义加法
                 quadTable.GenQuad("add", zero, dstVar, dstVar);
                 for (int i = 0; i < indexList.Count - 1; i++)
                 {

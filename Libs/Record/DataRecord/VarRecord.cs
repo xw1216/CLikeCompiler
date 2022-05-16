@@ -38,5 +38,10 @@ namespace CLikeCompiler.Libs.Record.DataRecord
         {
             return RecordType.VAR;
         }
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 }

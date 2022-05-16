@@ -25,6 +25,7 @@ namespace CLikeCompiler.Libs.Component
         private RecordTable recordTable;
         private RegFiles regFiles;
         private QuadTable quadTable;
+        private List<string> codeTable;
 
         private const int DWord = 8;
 
@@ -32,11 +33,12 @@ namespace CLikeCompiler.Libs.Component
 
         internal TargetGenServer() {}
 
-        internal void InitExternalComponents(RegFiles regs, QuadTable quadTableIn, RecordTable recordTableIn)
+        internal void InitExternalComponents(RegFiles regs, QuadTable quadTableIn, RecordTable recordTableIn, List<string> codeTableIn)
         {
             this.regFiles = regs;
             this.quadTable = quadTableIn;
             this.recordTable = recordTableIn;
+            this.codeTable = codeTableIn;
             funcList = recordTableIn.GetFuncList();
             callList = recordTableIn.GetCallList();
         }
@@ -65,15 +67,29 @@ namespace CLikeCompiler.Libs.Component
         {
             targetCodeList.Clear();
             targetDataList.Clear();
+            codeTable?.Clear();
             funcNow = null;
+            Compiler.Instance().OnCodeTableChange();
         }
 
         private void MergeTargetCode()
         {
+            if (codeTable == null)
+            {
+                SendBackMessage("找不到目标代码表", LogMsgItem.Type.ERROR);
+                throw new Exception();
+            }
+
+            foreach (string str in targetDataList)
+            {
+                codeTable.Add(str + "\n");
+            }
+
             foreach (Target target in targetCodeList)
             {
-                targetDataList.Add(target.ToString());
+                codeTable.Add(target + "\n");
             }
+            Compiler.Instance().OnCodeTableChange();
         }
 
         #endregion
@@ -210,15 +226,13 @@ namespace CLikeCompiler.Libs.Component
 
         private void InsertLabelCode(Quad quad)
         {
-            if (quad.Label != null)
+            if (quad.Label == null) return;
+            Target label = new()
             {
-                Target label = new()
-                {
-                    IsLabel = true,
-                    Op = quad.Label.Name
-                };
-                targetCodeList.Add(label);
-            }
+                IsLabel = true,
+                Op = quad.Label.Name
+            };
+            targetCodeList.Add(label);
         }
 
         private string GetCheckRegOrImm(IRecord rec)

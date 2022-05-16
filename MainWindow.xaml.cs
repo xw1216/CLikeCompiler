@@ -33,6 +33,7 @@ namespace CLikeCompiler
     {
         private static MainWindow Host;
         public Logger logger;
+        public TargetWriter writer;
         public Compiler server;
 
 
@@ -45,7 +46,7 @@ namespace CLikeCompiler
             SetDefaultRootPath();
         }
 
-        public static ref MainWindow GetInstance()
+        public static ref MainWindow Instance()
         {
             return ref Host;
         }
@@ -55,6 +56,8 @@ namespace CLikeCompiler
             Host = this;
             logger = Logger.Instance();
             logger.Initialize();
+            writer = TargetWriter.Instance();
+            writer.Initialize();
             server = Compiler.Instance();
         }
 
@@ -86,7 +89,7 @@ namespace CLikeCompiler
         internal void SetDefaultRootPath()
         {
             var folder = Windows.Storage.ApplicationData.Current.LocalFolder;
-            MainWindow.GetInstance().server.SetRootPath(folder.Path);
+            MainWindow.Instance().server.SetRootPath(folder.Path);
         }
 
         private void FrameNavigation(NavigationViewItem pageSelected)
@@ -120,11 +123,11 @@ namespace CLikeCompiler
                 contentFrame.Navigate(pageType, null, new EntranceNavigationTransitionInfo());
             } else
             {
-                ShowErrorPage("应用发生了内部错误");
+                ShowNotifyPage("应用发生了内部错误");
             }
         }
 
-        public async void ShowErrorPage(string message, string title = "内部错误")
+        public async void ShowNotifyPage(string message, string title = "内部错误")
         {
             CLikeCompiler.Pages.ErrorDialog dialogPage = new();
             dialogPage.SetErrorMsg(message);

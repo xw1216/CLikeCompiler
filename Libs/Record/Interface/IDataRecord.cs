@@ -32,5 +32,6 @@ namespace CLikeCompiler.Libs.Record.Interface
                 _ => 0,
             };
         }
+
     }
 }

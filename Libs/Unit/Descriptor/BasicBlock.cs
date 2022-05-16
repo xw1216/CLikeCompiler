@@ -136,14 +136,14 @@ namespace CLikeCompiler.Libs.Unit.Descriptor
             return (QuadList[0].ToQuad == quad);
         }
 
-        internal bool IsLastJump()
+        internal bool IsLastUnconditionalJump()
         {
             if (QuadList.Count == 0)
             {
                 return false;
             }
             Quad lastQuad = QuadList.Last().ToQuad;
-            return Quad.IsJumpOp(lastQuad.Name) && lastQuad.Name != "jal" & lastQuad.Name != "jr";
+            return lastQuad.Name == "j";
         }
 
         #endregion

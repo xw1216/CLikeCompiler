@@ -110,7 +110,7 @@ namespace CLikeCompiler.Pages
         private void MoreLogClick(object sender, RoutedEventArgs e)
         {
             Logger.Instance().OpenLogInNotepad();
-            MainWindow.GetInstance().ShowErrorPage("若要继续，请先关闭日志文件。", "提示");
+            MainWindow.Instance().ShowNotifyPage("若要继续，请先关闭日志文件。", "提示");
         }
 
         private void ClearLogClick(object sender, RoutedEventArgs e)
@@ -122,9 +122,9 @@ namespace CLikeCompiler.Pages
         {
             LogReportArgs args = new(LogMsgItem.Type.WARN, "Test");
             LogReportArgs arg = new(LogMsgItem.Type.ERROR, "Test");
-            MainWindow.GetInstance().GetLogger().NewLogRecord("Test", LogMsgItem.Type.INFO);
-            MainWindow.GetInstance().server.ReportBackInfo(this, args);
-            MainWindow.GetInstance().server.ReportFrontInfo(this, arg);
+            MainWindow.Instance().GetLogger().NewLogRecord("Test", LogMsgItem.Type.INFO);
+            MainWindow.Instance().server.ReportBackInfo(this, args);
+            MainWindow.Instance().server.ReportFrontInfo(this, arg);
         }
 
     }
