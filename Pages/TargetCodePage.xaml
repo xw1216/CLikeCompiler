@@ -29,10 +29,13 @@
             </CommandBar.Content>
         </CommandBar>
 
-        <TextBlock Grid.Row="1" x:Name="CodeBlock" FontSize="16" Margin="20, 14" 
-                       HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <ScrollViewer Grid.Row="1" ZoomMode="Disabled" 
+                      HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                      HorizontalScrollMode="Auto" VerticalScrollMode="Auto">
+            <TextBlock x:Name="CodeBlock" FontSize="16" Margin="28, 14, 14, 14" >
+            </TextBlock>
+        </ScrollViewer>
 
-        </TextBlock>
 
     </Grid>
 </Page>

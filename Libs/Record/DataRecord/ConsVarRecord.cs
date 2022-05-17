@@ -15,7 +15,7 @@ namespace CLikeCompiler.Libs.Record.DataRecord
         internal string OriginCont { get; set; }
         internal ConsVarRecord()
         {
-            this.Name = "~Con" + conCnt;
+            this.Name = ".Con" + conCnt;
             conCnt++;
             Pos = Enum.RecordPos.DATA;
             IsGlobal = true;
@@ -23,7 +23,7 @@ namespace CLikeCompiler.Libs.Record.DataRecord
 
         internal ConsVarRecord(VarType type)
         {
-            this.Name = "~Con" + conCnt;
+            this.Name = ".Con" + conCnt;
             conCnt++;
             Pos = Enum.RecordPos.DATA;
             Type = type;

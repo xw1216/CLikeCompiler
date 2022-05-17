@@ -150,11 +150,10 @@
                             <ColumnDefinition Width="1*"/>
                         </Grid.ColumnDefinitions>
                         <CommandBar  Background="Transparent" IsOpen="False" DefaultLabelPosition="Right">
-                            <AppBarButton Icon="Bullets" Label="单步调试" Click="SingleStepClick"></AppBarButton>
+                            <AppBarButton Icon="Clear" Label="清空分析" Click="ClearActionRecordClick"></AppBarButton>
                             <AppBarButton Icon="OpenPane"  Label="关闭面板" Click="CloseCheckPane"></AppBarButton>
                             <CommandBar.SecondaryCommands>
                                 <AppBarButton Icon="Edit" Label="记录测试" Click="TestActionRecordClick"></AppBarButton>
-                                <AppBarButton Icon="Clear" Label="清空分析" Click="ClearActionRecordClick"></AppBarButton>
                             </CommandBar.SecondaryCommands>
                         </CommandBar>
                     </Grid>

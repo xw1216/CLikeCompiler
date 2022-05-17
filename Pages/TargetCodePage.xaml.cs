@@ -27,26 +27,30 @@ namespace CLikeCompiler.Pages
     /// </summary>
     public sealed partial class TargetCodePage : Page
     {
-        private readonly List<string> codeTable = Compiler.codeTable;
-        private readonly TargetWriter writer = MainWindow.Instance().writer;
+        private readonly List<string> codeTable;
+        private readonly TargetWriter writer;
 
 
         public TargetCodePage()
         {
             this.InitializeComponent();
+            codeTable = Compiler.codeTable;
+            writer = MainWindow.Instance().writer;
             Compiler.Instance().CodeTableChange += UpdateCodeDisplay;
+            UpdateCodeDisplay();
         }
 
         private void UpdateCodeDisplay()
         {
+            writer.ClearCodeFile();
             if (codeTable.Count <= 0)
             {
                 CodeBlock.Text = string.Empty;
-                writer.ClearCodeFile();
+               
             }
             else
             {
-                StringBuilder builder = new StringBuilder();
+                StringBuilder builder = new ();
                 foreach (string s in codeTable)
                 {
                     builder.Append(s);
@@ -64,7 +68,7 @@ namespace CLikeCompiler.Pages
 
         private void ClearDisplayClick(object sender, RoutedEventArgs e)
         {
-            throw new NotImplementedException();
+             CodeBlock.Text = string.Empty;
         }
     }
 }

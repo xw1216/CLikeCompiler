@@ -8,7 +8,99 @@
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
-    <Grid>
+    <Page.Resources>
+        <Style x:Key="HelpTextBlock" TargetType="RichTextBlock">
+            <Setter Property="Margin" Value="14, 4, 14, 4"/>
+            <Setter Property="TextAlignment" Value="Left"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+        </Style>
+    </Page.Resources>
+
+    <ScrollViewer ZoomMode="Enabled" HorizontalScrollMode="Auto" VerticalScrollMode="Enabled">
+<Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="1*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="2*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"  FontSize="36" Text="OSCC 帮助" Margin="16"
+                   HorizontalAlignment="Left" VerticalAlignment="Center"/>
+
+        <Grid Grid.Row="1" Margin="0,0,0,14">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="1*"/>
+                <RowDefinition Height="1*"/>
+            </Grid.RowDefinitions>
+            <RichTextBlock Grid.Row="0"  Style="{StaticResource HelpTextBlock}">
+                <Paragraph FontSize="16" Margin="8, 8, 8, 1">
+                    Q : 这是什么应用？
+                </Paragraph>
+            </RichTextBlock>
+            <RichTextBlock Grid.Row="1"  Style="{StaticResource HelpTextBlock}">
+                <Paragraph FontSize="16" Margin="8, 1, 8, 8">
+                    A : 这是一款类 C 语言的简单编译器，能够将输入的源码转换生成为 RiscV 64 IM 汇编代码。
+                </Paragraph>
+            </RichTextBlock>
+        </Grid>
+
+        <Grid Grid.Row="2" Margin="0,0,0,14">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="1*"/>
+                <RowDefinition Height="1*"/>
+            </Grid.RowDefinitions>
+            <RichTextBlock Grid.Row="0"  Style="{StaticResource HelpTextBlock}">
+                <Paragraph FontSize="16" Margin="8, 8, 8, 1">
+                    Q : 有什么其他功能？
+                </Paragraph>
+            </RichTextBlock>
+            <RichTextBlock Grid.Row="1"  Style="{StaticResource HelpTextBlock}">
+                <Paragraph FontSize="16" Margin="8, 1, 8, 8">
+                    A : 您可以通过本应用检查代码的正确性，查看逐步的分析过程，中间代码与目标代码。应用还提供了详细的日志功能。
+                </Paragraph>
+            </RichTextBlock>
+        </Grid>
+
+        <Grid Grid.Row="3" Margin="0,0,0,14">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="1*"/>
+                <RowDefinition Height="1*"/>
+            </Grid.RowDefinitions>
+            <RichTextBlock Grid.Row="0"  Style="{StaticResource HelpTextBlock}">
+                <Paragraph FontSize="16" Margin="8, 8, 8, 1">
+                    Q : 我应该怎么使用？
+                </Paragraph>
+            </RichTextBlock>
+            <RichTextBlock Grid.Row="1" Style="{StaticResource HelpTextBlock}">
+                <Paragraph FontSize="16" Margin="8, 1, 8, 8">
+                    A : 从左侧菜单栏导航到第一个选项以开始，您可以试着探索工具栏中的各个功能。
+                </Paragraph>
+            </RichTextBlock>
+        </Grid>
+
+        <Grid Grid.Row="4" Margin="0,0,0,14">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="1*"/>
+                <RowDefinition Height="1*"/>
+            </Grid.RowDefinitions>
+            <RichTextBlock Grid.Row="0"  Style="{StaticResource HelpTextBlock}">
+                <Paragraph FontSize="16" Margin="8, 8, 8, 1">
+                    Q : 软件需要什么环境？
+                </Paragraph>
+            </RichTextBlock>
+            <RichTextBlock Grid.Row="1" Style="{StaticResource HelpTextBlock}">
+                <Paragraph FontSize="16" Margin="8, 1, 8, 8">
+                    A : 本软件使用 C# 与 WinUI3 框架写成，您可能需要 20H2 及以上的 Window 10 / 11 系统，并安装 .Net 6.0 框架。
+                </Paragraph>
+            </RichTextBlock>
+        </Grid>
 
     </Grid>
+    </ScrollViewer>
+
+    
 </Page>

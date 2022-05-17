@@ -138,9 +138,9 @@ namespace CLikeCompiler
                 PrimaryButtonText = "确定",
                 DefaultButton = ContentDialogButton.Primary,
                 Content = dialogPage,
+                XamlRoot = SideNav.XamlRoot
             };
 
-            dialog.XamlRoot = SideNav.XamlRoot;
             try
             {
                 await dialog.ShowAsync();

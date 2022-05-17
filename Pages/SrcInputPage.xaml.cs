@@ -83,13 +83,23 @@ namespace CLikeCompiler.Pages
         {
             string src = codeBox.Text;
             CheckCodeEmpty(src);
-            if(MainWindow.Instance().server.StartCompile(ref src, codeBox))
+            logger.ClearActionRecord();
+            try
             {
-                CompileSuccessHandler();
-                
-            } else
+                if (MainWindow.Instance().server.StartCompile(ref src, codeBox))
+                {
+                    CompileSuccessHandler();
+
+                }
+                else
+                {
+                    CompileErrorDetectedHandler();
+                }
+            }
+            catch (Exception)
             {
                 CompileErrorDetectedHandler();
+                Compiler.ResetCompiler();
             }
         }
 
@@ -135,11 +145,6 @@ namespace CLikeCompiler.Pages
         private void TestActionRecordClick(object sender, RoutedEventArgs e)
         {
             logger.ActionRecordTest();
-        }
-
-        private void SingleStepClick(object sender, RoutedEventArgs e)
-        {
-
         }
     }
 

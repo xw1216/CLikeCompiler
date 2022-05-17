@@ -87,7 +87,7 @@ namespace CLikeCompiler.Libs.Util
             ActionDisplayed.Add(action);
         }
 
-        public  void ClearActionRecord()
+        public void ClearActionRecord()
         {
             ActionDisplayed.Clear();
         }

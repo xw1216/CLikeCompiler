@@ -146,8 +146,8 @@ namespace CLikeCompiler.Libs.Component
                 }
                 string width = GetWidthStr(rec.Type);
                 
-                targetDataList.Add(rec.Name + ":");
-                targetDataList.Add("\t" + width + rec.Val);
+                targetDataList.Add(rec.Name + ": ");
+                targetDataList.Add("\t " + width + " " + rec.Val);
             }
         }
 
@@ -178,6 +178,7 @@ namespace CLikeCompiler.Libs.Component
 
         private void GenTextCode()
         {
+            targetDataList.Add(".text");
             List<Quad> quadList = quadTable.GetQuadList();
             for (int i = 0; i < quadList.Count; i++)
             {
@@ -190,8 +191,6 @@ namespace CLikeCompiler.Libs.Component
                 }
                 // 如果有标识 先插入跳转标识
                 InsertLabelCode(quad);
-
-                
 
                 // 跳转操作 出现 Reg Label 记录
                 if (Quad.IsJumpOp(op))
@@ -230,7 +229,7 @@ namespace CLikeCompiler.Libs.Component
             Target label = new()
             {
                 IsLabel = true,
-                Op = quad.Label.Name
+                Op = quad.Label.Name + ": "
             };
             targetCodeList.Add(label);
         }
@@ -317,12 +316,17 @@ namespace CLikeCompiler.Libs.Component
                 target.Args.Add(GetCheckRegOrImm(quad.Rhs));
             }
 
+            if (quad.Name == "jr")
+            {
+                target.Args.Add(GetCheckRegOrImm(quad.Dst));
+                return;
+            }
+
             if (quad.Dst is not LabelRecord label)
             {
                 SendBackMessage("跳转式没有目标地址", LogMsgItem.Type.ERROR);
                 throw new Exception();
             }
-
             target.Args.Add(label.Name);
             AddTarget(target);
         }
@@ -339,11 +343,11 @@ namespace CLikeCompiler.Libs.Component
                 throw new Exception();
             }
 
-            target.Args[0] = "mv";
+            target.Op = "mv";
 
             if (quad.Dst == quad.Lhs)
             {
-                quadTable.Remove(quad);
+                return;
             }
 
             target.Args.Add(GetCheckRegOrImm(quad.Dst));
@@ -426,7 +430,7 @@ namespace CLikeCompiler.Libs.Component
             Regs reg = (Regs)quad.Dst;
 
             AddTarget(new Target("lui", reg.Name, "%hi(" + quad.Lhs.Name + ")"));
-            AddTarget(new Target("addi", reg.Name, "%lo(" + quad.Lhs.Name + ")"));
+            AddTarget(new Target("addi", reg.Name, reg.Name,"%lo(" + quad.Lhs.Name + ")"));
         }
 
         private void LoadStoreIndirectHandler(Quad quad, bool isStore)
@@ -438,19 +442,20 @@ namespace CLikeCompiler.Libs.Component
             }
 
             Regs refReg, reg;
+            TypeRecord type;
 
             if (isStore)
             {
-                refReg = (Regs)quad.Dst;
+                refReg = (Regs)quad.Rhs;
                 reg = (Regs)quad.Lhs;
+                type = (TypeRecord)quad.Dst;
             }
             else
             {
                 refReg = (Regs)quad.Lhs;
                 reg = (Regs)quad.Dst;
+                type = (TypeRecord)quad.Rhs;
             }
-
-            TypeRecord type = (TypeRecord)quad.Rhs;
 
             string op = LoadStoreTypeStr(type.VarType, isStore);
             AddTarget(new Target(op, reg.Name, "(" + refReg + ")"));
@@ -488,13 +493,13 @@ namespace CLikeCompiler.Libs.Component
 
             if (isStore)
             {
-                reg = (Regs)quad.Dst;
-                var = (VarRecord)quad.Lhs;
+                reg = (Regs)quad.Lhs;
+                var = (VarRecord)quad.Dst;
             }
             else
             {
-                reg = (Regs)quad.Lhs;
-                var = (VarRecord)quad.Dst;
+                reg = (Regs)quad.Dst;
+                var = (VarRecord)quad.Lhs;
             }
 
             string op = LoadStoreTypeStr(var, isStore);
@@ -509,11 +514,11 @@ namespace CLikeCompiler.Libs.Component
 
         private void CallQuadHandler(Quad quad)
         {
-            if (quad.Lhs != null || quad.Rhs != null || quad.Dst == null)
-            {
-                SendBackMessage("格式不正确的调用中间代码", LogMsgItem.Type.ERROR);
-                throw new Exception();
-            }
+            // if (quad.Lhs != null || quad.Rhs != null || quad.Dst == null)
+            // {
+            //     SendBackMessage("格式不正确的调用中间代码", LogMsgItem.Type.ERROR);
+            //     throw new Exception();
+            // }
 
             switch (quad.Name)
             {
@@ -535,8 +540,8 @@ namespace CLikeCompiler.Libs.Component
                 case "CallerSave": 
                     CallerSaveRestoreHandler((CallRecord)quad.Dst, false);
                     break;
-                case "CallerArgs": 
-                    CallerArgsHandler((CallRecord)quad.Dst);
+                case "CallerArg": 
+                    CallerArgHandler(quad);
                     break;
                 case "CallerRestore": 
                     CallerSaveRestoreHandler((CallRecord)quad.Dst, true);
@@ -556,7 +561,7 @@ namespace CLikeCompiler.Libs.Component
         {
             funcNow = func;
             int frameSize = func.FrameLength;
-            AddTarget(new Target("subi", "sp", "sp", frameSize.ToString()));
+            AddTarget(new Target("addi", "sp", "sp", (-frameSize).ToString()));
             AddTarget(new Target("sd", "ra", StackPointerStr(frameSize - DWord, false)));
             AddTarget(new Target("sd", "fp", StackPointerStr(frameSize - 2 * DWord, false)));
             AddTarget(new Target("addi", "fp", "sp", frameSize.ToString()));
@@ -564,13 +569,13 @@ namespace CLikeCompiler.Libs.Component
 
         private void CalleeSaveRestoreHandler(FuncRecord func, bool isRestore)
         {
-            int baseOffset = 3 * DWord;
+            int baseOffset = - (3 * DWord);
             List<Regs> regs = func.SaveRegList;
             string op = isRestore ? "ld" : "sd";
             foreach (Regs reg in regs)
             {
                 AddTarget(new Target( op, reg.Name, 
-                    StackPointerStr(func.FrameLength - baseOffset, false)));
+                    StackPointerStr(baseOffset, true)));
                 baseOffset -= DWord;
             }
         }
@@ -591,8 +596,8 @@ namespace CLikeCompiler.Libs.Component
 
         private void CallerEntryExitHandler(CallRecord call, bool isExit)
         {
-            string op = isExit ? "addi" : "subi";
-            AddTarget(new Target(op, "sp", "sp", call.CallLength.ToString()));
+            int length = isExit ? call.CallLength : (-call.CallLength);
+            AddTarget(new Target("addi", "sp", "sp", length.ToString()));
         }
 
         private void CallerSaveRestoreHandler(CallRecord call, bool isRestore)
@@ -603,28 +608,30 @@ namespace CLikeCompiler.Libs.Component
 
             foreach (Regs reg in regs)
             {
-                AddTarget(new Target(op, reg.Name, StackPointerStr(baseOffset, false)));
+                AddTarget(new Target(op, reg.Name, StackPointerStr(call.CallLength - baseOffset, false)));
                 baseOffset -= DWord;
             }
         }
 
-        private void CallerArgsHandler(CallRecord call)
+        private void CallerArgHandler(Quad quad)
         {
-            List<VarRecord> args = call.ArgsList;
-            for (int i = 0; i < args.Count; i++)
+
+            // 前 8 个参数
+            if (quad.Rhs == null)
             {
-                string loadOp = LoadStoreTypeStr(args[i], false);
-                if (i < 8)
-                {
-                    AddTarget(new Target(loadOp, regFiles.FindFuncArgRegs(i).Name, 
-                        StackPointerStr(args[i].Offset, true)));
-                }
-                else
-                {
-                    string storeOp = LoadStoreTypeStr(args[i], true);
-                    AddTarget(new Target(loadOp, "gp", StackPointerStr(args[i].Offset, true)));
-                    AddTarget(new Target(storeOp, "gp", StackPointerStr(call.CallLength - args[i].Offset, true)));
-                }
+                AddTarget(new Target("mv", GetCheckRegOrImm(quad.Dst), GetCheckRegOrImm(quad.Lhs)));
+            }
+            // 后续参数存入内存
+            else
+            {
+                int index = int.Parse(((ImmRecord)quad.Rhs).Value);
+                CallRecord call = (CallRecord)quad.Dst;
+                VarRecord arg = call.Callee.ArgsList[index];
+
+                string storeOp = LoadStoreTypeStr(arg, true);
+
+                AddTarget(new Target(storeOp, GetCheckRegOrImm(quad.Lhs), 
+                    StackPointerStr(call.CallLength - arg.Offset, false)));
             }
         }
 

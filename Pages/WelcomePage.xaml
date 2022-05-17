@@ -8,7 +8,8 @@
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
-    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <ScrollViewer ZoomMode="Enabled" HorizontalScrollMode="Auto" VerticalScrollMode="Enabled">
+        <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
         <Grid.RowDefinitions>
             <RowDefinition Height="4*"/>
             <RowDefinition Height="1*"/>
@@ -47,4 +48,6 @@
         <TextBlock Grid.Row="5" Text="2022 (c) Outspace." Margin="0, 0, 0, 14"
                    HorizontalAlignment="Center" VerticalAlignment="Bottom"/>
     </Grid>
+
+    </ScrollViewer>
 </Page>

@@ -32,9 +32,11 @@ namespace CLikeCompiler.Libs.Util
         private async void OpenFileHandle()
         {
             StorageFolder storageFolder = ApplicationData.Current.LocalFolder;
+            await semaphore.WaitAsync();
             codeFile = await storageFolder.CreateFileAsync("Code.txt",
                 CreationCollisionOption.OpenIfExists);
             await FileIO.WriteTextAsync(codeFile, "");
+            semaphore.Release();
         }
 
         public async void ExportTargetCodeToFile(List<string> code)
@@ -65,7 +67,9 @@ namespace CLikeCompiler.Libs.Util
 
         public async void ClearCodeFile()
         {
+            await semaphore.WaitAsync();
             await FileIO.WriteTextAsync(codeFile, string.Empty);
+            semaphore.Release();
         }
     }
 }

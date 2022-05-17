@@ -19,7 +19,7 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
         internal List<Regs> SaveRegList { get; private set; }
         internal List<VarRecord> ArgsList { get; set; }
 
-        internal int CallLength => SaveRegList.Count * FuncRecord.Dword + Callee.ArgLength;
+        internal int CallLength => SaveRegList.Count * FuncRecord.DWord + Callee.ArgLength;
 
 
         public CallRecord(FuncRecord caller, FuncRecord callee)
@@ -32,7 +32,7 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
         {
             if(Caller == null || Callee == null) { return false; }
 
-            SaveRegList = RegFiles.CalcuCallerSaveList(Caller, Callee);
+            SaveRegList = Compiler.regFiles.CalcuCallerSaveList(Caller, Callee);
             return true;
         }
 

@@ -14,7 +14,8 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
 {
     internal class FuncRecord : IRecord
     {
-        internal const int Dword = 8;
+        internal const int HWord = 4;
+        internal const int DWord = 8;
         internal const int SaveBaseLen = 16;
 
         public string Name { get; set; } = "";
@@ -115,7 +116,7 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
 
                 // 地址对齐
                 int vacancy;
-                if ((vacancy = ArgLength % argsList[i].Width) != 0)
+                if ((vacancy = ArgLength % HWord) != 0)
                 {
                     ArgLength += argsList[i].Width - vacancy;
                 }
@@ -133,8 +134,8 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
         /// </remarks>
         private void CalcuSavePlace()
         {
-            SaveRegList = RegFiles.CalcuCalleeSaveList(this);
-            SaveLength = SaveRegList.Count * Dword + SaveBaseLen;
+            SaveRegList = Compiler.regFiles.CalcuCalleeSaveList(this);
+            SaveLength = SaveRegList.Count * DWord + SaveBaseLen;
         }
 
         /// <summary>
@@ -168,6 +169,7 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
             {
                 for(int j = 0; j < table.Count; j++)
                 {
+                    if(argsList.Contains(table[j])) continue;
                     localVars.Add(table[j]);
                 }
             }
@@ -178,7 +180,7 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
                 int vacancy;
                 if((vacancy = Math.Abs(offset % data.Width)) != 0)
                 {
-                    offset -= (data.Width - vacancy);
+                    offset -=  (data.Width - vacancy);
                 }
 
                 if (data.GetRecordType() == RecordType.VAR)

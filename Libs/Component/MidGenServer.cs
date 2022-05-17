@@ -1818,7 +1818,8 @@ namespace CLikeCompiler.Libs.Component
              * s { b | h | w | d } gp, callSize - param8.offset(sp)
              */
             // todo 需要将 Args 展开显式传入 以便计算活跃信息
-            quadTable.GenQuad("CallerArgs", null, null, callRecord);
+            // quadTable.GenQuad("CallerArgs", null, null, callRecord);
+            MoveCallerArgs(argsList, callRecord);
             /* 实际调用
              * e.g. jal ra, offset
              */
@@ -1844,6 +1845,25 @@ namespace CLikeCompiler.Libs.Component
             backProp.entry = record;
             return true;
         }
+
+        private void MoveCallerArgs(List<VarRecord> args, CallRecord call) 
+        {
+            for (int i = 0; i < args.Count; i++)
+            {
+                if (i < 8)
+                {
+                    // mv a0, arg
+                    quadTable.GenQuad("CallerArg", args[i], null, Compiler.regFiles.FindFuncArgRegs(i));
+                }
+                else
+                {
+                    // s { b | h | w | d } s1, callSize - param8.offset(sp)
+                    ImmRecord index = new("argIndex", i);
+                    quadTable.GenQuad("CallerArg", args[i], index, call);
+                }
+            }
+        }
+
         #endregion
 
         #region No.36 Id
@@ -2048,13 +2068,11 @@ namespace CLikeCompiler.Libs.Component
 
             if (arrayRecord.Dim == 1)
             {
-                ImmRecord index = new ("index", 0);
-                quadTable.GenQuad("addi", indexList[0], index, dstVar);
+                quadTable.GenQuad("add", indexList[0], zero, dstVar);
             }
             else
             {
-                // todo 修正 dstVar 无意义加法
-                quadTable.GenQuad("add", zero, dstVar, dstVar);
+                // quadTable.GenQuad("add", zero, zero, dstVar);
                 for (int i = 0; i < indexList.Count - 1; i++)
                 {
                     // 需要支持大下标数组 那么需要将立即数拆分为 20bit 与 12 bit 的 16 进制数
@@ -2261,7 +2279,7 @@ namespace CLikeCompiler.Libs.Component
              * mv (arrayRecord.refIndex), rhsRecord 
              */
             TypeRecord typeRecord = new(arrayRecord.RefArray.Type);
-            quadTable.GenQuad("Store", rhsRecord, typeRecord, arrayRecord.RefIndex);
+            quadTable.GenQuad("Store", rhsRecord, arrayRecord.RefIndex, typeRecord);
             return true;
         }
         #endregion

@@ -64,35 +64,26 @@ namespace CLikeCompiler.Libs.Unit.Reg
             }
         }
 
-        internal static List<Regs> CalcuCallerSaveList(FuncRecord caller, FuncRecord callee)
+        internal List<Regs> CalcuCallerSaveList(FuncRecord caller, FuncRecord callee)
         {
-            List<Regs> saveList = new();
             List<Regs> callerUseList = caller.UsedRegList;
             List<Regs> calleeUseList = callee.UsedRegList;
 
             ListIntersect(callerUseList, calleeUseList, out List<Regs> list);
-            ListIntersect(list, saveList, out List<Regs> result);
+            ListIntersect(list, CallerSaveList, out List<Regs> result);
             return result;
         }
 
-        internal static List<Regs> CalcuCalleeSaveList(FuncRecord callee)
+        internal List<Regs> CalcuCalleeSaveList(FuncRecord callee)
         {
-            List<Regs> saveList = new();
             List<Regs> calleeUseList = callee.UsedRegList;
-            ListIntersect(calleeUseList, saveList, out List<Regs> result);
-            return saveList;
+            ListIntersect(calleeUseList, CalleeSaveList, out List<Regs> result);
+            return result;
         }
 
         private static void ListIntersect(List<Regs> lhs, List<Regs> rhs, out List<Regs> result)
         {
-             result = new List<Regs>();
-            foreach(Regs r in lhs)
-            {
-                if(rhs.Contains(r))
-                {
-                    result.Add(r);
-                }
-            }
+            result = lhs.Intersect(rhs).ToList();
         }
 
         private static readonly List<string> RegStdList = new()

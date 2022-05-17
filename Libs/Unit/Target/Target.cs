@@ -32,7 +32,7 @@ namespace CLikeCompiler.Libs.Unit.Target
 
             if (Args.Count > 0)
             {
-                builder.Append('\t');
+                builder.Append(" \t");
             }
 
             for (int i = 0; i < Args.Count; i++)
@@ -40,7 +40,7 @@ namespace CLikeCompiler.Libs.Unit.Target
                 builder.Append(Args[i]);
                 if (i < Args.Count - 1)
                 {
-                    builder.Append(",\t");
+                    builder.Append(", \t");
                 }
             }
             return builder.ToString();

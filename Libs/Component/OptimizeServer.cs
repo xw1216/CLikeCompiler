@@ -478,8 +478,29 @@ namespace CLikeCompiler.Libs.Component
                 
                 if(quad.VarNum < 1) {continue;}
 
+                // 刷新当前四元式中变量在寄存器中的活跃情况
+                UpdateVarActive(quad);
+
                 // 对于语句 op dst, lhs, rhs , 获取 R_dst, R_lhs, R_rhs
                 GetReg(block, quad);
+            }
+        }
+
+        private static void UpdateVarActive(QuadDescriptor quad)
+        {
+            if (quad.LhsDescriptor != null)
+            {
+                quad.LhsDescriptor.Var.Active = quad.LhsDescriptor;
+            }
+
+            if (quad.RhsDescriptor != null)
+            {
+                quad.RhsDescriptor.Var.Active = quad.RhsDescriptor;
+            }
+
+            if (quad.DstDescriptor != null)
+            {
+                quad.DstDescriptor.Var.Active = quad.DstDescriptor;
             }
         }
 
@@ -487,10 +508,44 @@ namespace CLikeCompiler.Libs.Component
 
         #region Post Proces
 
+        private int ClosestCallerEntryIndex(BasicBlock block)
+        {
+            QuadDescriptor entryQuad = null;
+            for (int i = block.QuadList.Count - 1; i >= 0; i--)
+            {
+                if (block.QuadList[i].ToQuad.Name != "CallerEntry") continue;
+                entryQuad = block.QuadList[i];
+                break;
+            }
+
+            if (entryQuad == null)
+            {
+                SendBackMessage("没有找到函数调用入口", LogMsgItem.Type.ERROR);
+                throw new Exception();
+            }
+            int targetIndex = quadTable.IndexOf(entryQuad.ToQuad);
+            return targetIndex;
+        }
+
         private void PostDispatcherStore(BasicBlock block)
         {
-            // 确定 CalleeRestore 句的位置
-            int targetIndex = quadTable.IndexOf(block.QuadList.Last().ToQuad);
+            int targetIndex;
+            // 调用时 CallerEntry 之前就要保存
+            if (block.QuadList.Last().ToQuad.Name == "jal")
+            {
+                targetIndex = ClosestCallerEntryIndex(block);
+            }
+            // 定义时 CalleeRestore 之前就要保存
+            else if (block.QuadList.Last().ToQuad.Name == "jr")
+            {
+                targetIndex = quadTable.IndexOf(block.QuadList.Last().ToQuad);
+                targetIndex -= 2;
+            }
+            else
+            {
+                targetIndex = quadTable.IndexOf(block.QuadList.Last().ToQuad);
+            }
+
             if (targetIndex == -1)
             {
                 SendBackMessage("找不到基本块出口语句", LogMsgItem.Type.ERROR);
@@ -523,8 +578,8 @@ namespace CLikeCompiler.Libs.Component
                 {
                     Name = "Store",
                     Lhs = var.Addr.RegAt.Reg,
-                    Rhs = new TypeRecord(var.Var.Type),
-                    Dst = addrReg
+                    Rhs = addrReg,
+                    Dst = new TypeRecord(var.Var.Type)
                 };
                 ExchangeJumpLabel(quadTable.ElemAt(targetIndex), storeQuad);
                 quadTable.Insert(targetIndex, storeQuad);
@@ -563,13 +618,15 @@ namespace CLikeCompiler.Libs.Component
             quadTable.Insert(targetIndex, loadAddrQuad);
         }
 
-        private void VarLoadHandler(QuadDescriptor quad, VarDescriptor var, RegDescriptor reg)
+        private void VarLoadHandler(BasicBlock block, QuadDescriptor quad, VarDescriptor var, RegDescriptor reg)
         {
             // 管理描述符 并使得 reg 被 var 独占
             RegMonopolizeByVar(reg, var);
 
+            var targetIndex = quad.ToQuad.Name == "CallerArg" ? 
+                ClosestCallerEntryIndex(block) : quadTable.IndexOf(quad.ToQuad);
+            
             // 插入对应的 Load 指令
-            int targetIndex = quadTable.IndexOf(quad.ToQuad);
             if (targetIndex == -1)
             {
                 SendBackMessage("表中找不到目标四元式", LogMsgItem.Type.ERROR);
@@ -658,7 +715,7 @@ namespace CLikeCompiler.Libs.Component
 
             // 如果 lhs 不在对应的 R 中，更改描述符，生成 Ld 语句并进行相应关联
             SaveCalleeUsedReg(lhsReg);
-            VarLoadHandler(quad, quad.LhsDescriptor.Var, lhsReg);
+            VarLoadHandler(block, quad, quad.LhsDescriptor.Var, lhsReg);
             
             return lhsReg;
         }
@@ -675,7 +732,7 @@ namespace CLikeCompiler.Libs.Component
             if(rhsReg == rhsVar.Addr.RegAt) return rhsReg;
             // 继续判断 rhs 的位置并更改描述符，生成 Ld
             SaveCalleeUsedReg(rhsReg);
-            VarLoadHandler(quad, quad.RhsDescriptor.Var, rhsReg);
+            VarLoadHandler(block, quad, quad.RhsDescriptor.Var, rhsReg);
             return rhsReg;
         }
 
@@ -790,16 +847,16 @@ namespace CLikeCompiler.Libs.Component
             return emptyReg;
         }
 
-        private static RegDescriptor GetRegForDstVarShare(VarDescriptor lhsVar, VarDescriptor rhsVar, 
+        private static RegDescriptor GetRegForDstVarShare(QuadDescriptor quad,  VarDescriptor lhsVar, VarDescriptor rhsVar, 
             RegDescriptor lhsReg , RegDescriptor rhsReg ) 
         {
             // lhs 或者 rhs 任意一方在本指令后不再使用 且 R_lhs 或 R_rhs 仅保存了这个变量
-            if (lhsVar != null && lhsReg != null && lhsVar.Active.IsActive == false && lhsReg.Vars.Count == 1)
+            if (lhsVar != null && lhsReg != null && quad.LhsDescriptor?.IsActive == false && lhsReg.Vars.Count == 1)
             {
                 return lhsReg;
             }
 
-            if (rhsVar != null && rhsReg != null && rhsVar.Active.IsActive == false && rhsReg.Vars.Count == 1)
+            if (rhsVar != null && rhsReg != null && quad.RhsDescriptor?.IsActive == false && rhsReg.Vars.Count == 1)
             {
                 return rhsReg;
             }
@@ -820,7 +877,7 @@ namespace CLikeCompiler.Libs.Component
             // 选择 R_dst 时特殊步骤：共用 R_lhs 或 R_rhs
             if (isDst)
             {
-                RegDescriptor shareReg = GetRegForDstVarShare(otherVar, dstVar, lhsReg, rhsReg);
+                RegDescriptor shareReg = GetRegForDstVarShare(quad, otherVar, dstVar, lhsReg, rhsReg);
                 if(shareReg != null) { return shareReg; }
             }
 
@@ -850,8 +907,8 @@ namespace CLikeCompiler.Libs.Component
                         if(nowVar == srcVar && nowVar != otherVar && nowVar != dstVar) {continue;}
                     }
                     
-                    // 如果 nowVar 后续不再使用 且在基本块出口活跃 那么可占用
-                    if (nowVar.Active.IsActive == false && block.outActiveList.Contains(nowVar.Var)) { continue;}
+                    // 如果 nowVar 后续不再使用（且不在基本块出口活跃） 那么可占用
+                    if (nowVar.Active.IsActive == false && !(block.outActiveList.Contains(nowVar.Var))) { continue;}
 
                     // 否则该变量需要生成 st 语句 代价增加
                     cost++;

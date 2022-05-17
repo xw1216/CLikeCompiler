@@ -65,7 +65,7 @@ namespace CLikeCompiler.Libs.Unit.Quads
             "CalleeExit",
             "CallerEntry",
             "CallerSave",
-            "CallerArgs",
+            "CallerArg",
             "CallerRestore",
             "CallerExit",
         };
