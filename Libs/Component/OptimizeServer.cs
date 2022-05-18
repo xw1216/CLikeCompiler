@@ -865,7 +865,8 @@ namespace CLikeCompiler.Libs.Component
         }
 
         // 注意为 dst 分配寄存器时 与 lhs & rhs 有较大的不同
-        private RegDescriptor GetRegForSingleVar(BasicBlock block, QuadDescriptor quad, VarDescriptor srcVar, VarDescriptor otherVar, VarDescriptor dstVar, 
+        private RegDescriptor GetRegForSingleVar(BasicBlock block, QuadDescriptor quad, 
+            VarDescriptor srcVar, VarDescriptor otherVar, VarDescriptor dstVar, 
             bool isDst = false, RegDescriptor lhsReg = null, RegDescriptor rhsReg = null)
         {
             if (srcVar == null) { return null; }
@@ -908,7 +909,8 @@ namespace CLikeCompiler.Libs.Component
                     }
                     
                     // 如果 nowVar 后续不再使用（且不在基本块出口活跃） 那么可占用
-                    if (nowVar.Active.IsActive == false && !(block.outActiveList.Contains(nowVar.Var))) { continue;}
+                    if (nowVar.Active.IsActive == false && !(block.outActiveList.Contains(nowVar.Var))) 
+                    { continue;}
 
                     // 否则该变量需要生成 st 语句 代价增加
                     cost++;
