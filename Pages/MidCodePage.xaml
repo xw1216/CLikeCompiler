@@ -28,6 +28,12 @@
         </Grid.RowDefinitions>
 
         <CommandBar Grid.Row="0" Background="Transparent" IsOpen="False" DefaultLabelPosition="Right" IsDynamicOverflowEnabled="False">
+            <AppBarButton Icon="Library" Label="代码文件" Click="OpenCodeNotePad">
+                <AppBarButton.KeyboardAccelerators>
+                    <KeyboardAccelerator Modifiers="Control" Key="M" />
+                </AppBarButton.KeyboardAccelerators>
+            </AppBarButton>
+            
             <CommandBar.SecondaryCommands>
                 <AppBarButton Icon="Bullets" Label="说明"  Click="TogglePaneOnClick">
                     <AppBarButton.KeyboardAccelerators>

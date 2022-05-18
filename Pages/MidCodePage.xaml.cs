@@ -16,6 +16,7 @@ using Windows.Foundation.Collections;
 using CLikeCompiler.Libs;
 using CLikeCompiler.Libs.Runtime;
 using CLikeCompiler.Libs.Unit.Quads;
+using CLikeCompiler.Libs.Util;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -29,6 +30,7 @@ namespace CLikeCompiler.Pages
     {
         private readonly QuadTable quadTable = Compiler.quadTable;
         public readonly ObservableCollection<Quad> quadList = new();
+        private readonly TargetWriter writer = MainWindow.Instance().writer;
 
         private bool isPaneOpen = false;
 
@@ -44,6 +46,15 @@ namespace CLikeCompiler.Pages
                 IndexChangeHandler(value);
                 pageIndex = value;
             }
+        }
+
+        public MidCodePage()
+        {
+            this.InitializeComponent();
+            quadTable.NewQuadEvent += NewQuadHandler;
+            quadTable.ClearQuadEvent += QuadClearHandler;
+            Compiler.Instance().CodeTableChange += UpdateMidCodeFile;
+            UpdateMidCodeFile();
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -87,19 +98,24 @@ namespace CLikeCompiler.Pages
             quadList.Clear();
             QuadPager.NumberOfPages = 1;
         }
-        
-        public MidCodePage()
-        {
-            this.InitializeComponent();
-            quadTable.NewQuadEvent += NewQuadHandler;
-            quadTable.ClearQuadEvent += QuadClearHandler;
-        }
 
         private void TogglePaneOnClick(object sender, RoutedEventArgs e)
         {
             isPaneOpen = SplitView.IsPaneOpen;
             isPaneOpen = !isPaneOpen;
             SplitView.IsPaneOpen = isPaneOpen;
+        }
+
+        private void UpdateMidCodeFile()
+        {
+            writer.ClearCodeFile(false);
+            writer.ExportMidCodeToFile(Compiler.quadTable.GetQuadList());
+        }
+
+        private void OpenCodeNotePad(object sender, RoutedEventArgs e)
+        {
+            writer.OpenFileInNotepad(false);
+            MainWindow.Instance().ShowNotifyPage("若要继续，请先关闭代码文件。", "提示");
         }
     }
 }

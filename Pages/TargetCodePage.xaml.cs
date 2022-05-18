@@ -42,7 +42,7 @@ namespace CLikeCompiler.Pages
 
         private void UpdateCodeDisplay()
         {
-            writer.ClearCodeFile();
+            writer.ClearCodeFile(true);
             if (codeTable.Count <= 0)
             {
                 CodeBlock.Text = string.Empty;
@@ -62,7 +62,7 @@ namespace CLikeCompiler.Pages
 
         private void OpenCodeNotePad(object sender, RoutedEventArgs e)
         {
-            writer.OpenLogInNotepad();
+            writer.OpenFileInNotepad(true);
             MainWindow.Instance().ShowNotifyPage("若要继续，请先关闭代码文件。", "提示");
         }
 

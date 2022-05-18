@@ -18,11 +18,17 @@ namespace CLikeCompiler.Libs.Record.CodeRecord
         internal TypeRecord(VarType type)
         {
             VarType = type;
+            Name = VarType.ToString();
         }
 
         public RecordType GetRecordType()
         {
             return RecordType.TYPE;
+        }
+
+        public override string ToString()
+        {
+            return VarType.ToString();
         }
     }
 }
